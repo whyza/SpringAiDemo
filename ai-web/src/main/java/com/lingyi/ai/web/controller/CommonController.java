@@ -1,0 +1,183 @@
+package com.lingyi.ai.web.controller;
+
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.lingyi.ai.model.dto.DailyReportQueryDTO;
+import com.lingyi.ai.model.dto.EcommerceDataDTO;
+import com.lingyi.ai.model.vo.DailyReportDetailVO;
+import com.lingyi.ai.model.vo.DailyReportListVO;
+import com.lingyi.ai.model.vo.DailyReportPushVO;
+import com.lingyi.ai.service.DailyReportService;
+import com.lingyi.ai.service.ai.AiAnalysisService;
+import com.lingyi.ai.web.scheduler.DailyReportScheduler;
+import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * 通用结果封装
+ *
+ * @author lingyi
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "*", maxAge = 3600)
+public class CommonController {
+
+    @Resource
+    private AiAnalysisService aiAnalysisService;
+
+    @Resource
+    private DailyReportScheduler dailyReportScheduler;
+
+    @Resource
+    private DailyReportService dailyReportService;
+
+    /**
+     * 批量生成测试数据（近 N 天）
+     */
+    @PostMapping("/daily-report/generate-batch")
+    public Result<Integer> generateBatchData(@RequestParam(defaultValue = "10", name = "days") int days) {
+        log.info("批量生成测试数据，天数：{}", days);
+        try {
+            int count = dailyReportService.generateBatchData(days);
+            return Result.success(count);
+        } catch (Exception e) {
+            log.error("批量生成失败", e);
+            return Result.error("批量生成失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 生成电商日报（AI 分析 + 推送格式）
+     *
+     * @param dataDTO 电商数据
+     * @return 日报推送数据
+     */
+    @PostMapping("/daily-report/generate")
+    public Result<DailyReportPushVO> generateDailyReport(@RequestBody @Validated EcommerceDataDTO dataDTO) {
+        log.info("收到日报生成请求");
+        DailyReportPushVO report = aiAnalysisService.generateDailyReport(dataDTO);
+        return Result.success(report);
+    }
+
+    /**
+     * 手动触发日报推送（测试用）
+     *
+     * @param dataDTO 电商数据（可选，不提供则使用示例数据）
+     * @return 执行结果
+     */
+    @PostMapping("/daily-report/push")
+    public Result<String> pushDailyReport(@RequestBody(required = false) EcommerceDataDTO dataDTO) {
+        log.info("收到日报推送请求");
+        try {
+            if (dataDTO != null) {
+                dailyReportScheduler.manualTrigger(dataDTO);
+            } else {
+                dailyReportScheduler.generateAndPushDailyReport();
+            }
+            return Result.success("日报推送成功");
+        } catch (Exception e) {
+            log.error("日报推送失败", e);
+            return Result.error("日报推送失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 分页查询日报列表
+     *
+     * @param queryDTO 查询条件
+     * @return 分页结果
+     */
+    @PostMapping("/daily-report/list")
+    public Result<Page<DailyReportListVO>> listDailyReports(@RequestBody DailyReportQueryDTO queryDTO) {
+        log.info(
+                "查询日报列表，startDate：{}，endDate：{}，pageNum：{}，pageSize：{}",
+                queryDTO.getStartDate(), queryDTO.getEndDate(), queryDTO.getPageNum(), queryDTO.getPageSize()
+        );
+        Page<DailyReportListVO> page = dailyReportService.listReports(
+                queryDTO.getStartDate(),
+                queryDTO.getEndDate(),
+                queryDTO.getPageNum(),
+                queryDTO.getPageSize()
+        );
+        return Result.success(page);
+    }
+
+    /**
+     * 查询日报详情
+     *
+     * @param id 报告 ID
+     * @return 报告详情
+     */
+    @GetMapping("/daily-report/{id}")
+    public Result<DailyReportDetailVO> getDailyReportDetail(@PathVariable("id") Long id) {
+        log.info("查询日报详情，id：{}", id);
+        DailyReportDetailVO detail = dailyReportService.getReportDetail(id);
+        return Result.success(detail);
+    }
+
+    /**
+     * 健康检查
+     *
+     * @return 健康状态
+     */
+    @GetMapping("/health")
+    public Result<String> health() {
+        return Result.success("OK");
+    }
+
+    /**
+     * 周期总结 - 对指定日期范围内的日报数据进行 AI 总结
+     *
+     * @param queryDTO 日期范围查询条件
+     * @return 周期总结报告
+     */
+    @PostMapping("/daily-report/summary")
+    public Result<String> getPeriodSummary(@RequestBody DailyReportQueryDTO queryDTO) {
+        log.info(
+                "请求周期总结，startDate：{}，endDate：{}，forceRefresh：{}",
+                queryDTO.getStartDate(), queryDTO.getEndDate(), queryDTO.isForceRefresh()
+        );
+        try {
+            String summary = dailyReportService.getPeriodSummary(
+                    queryDTO.getStartDate(),
+                    queryDTO.getEndDate(),
+                    queryDTO.isForceRefresh()
+            );
+            return Result.success(summary);
+        } catch (Exception e) {
+            log.error("周期总结失败", e);
+            return Result.error("周期总结失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 通用结果封装类
+     */
+    @lombok.Data
+    public static class Result<T> {
+        private Integer code;
+        private String message;
+        private T data;
+
+        public static <T> Result<T> success(T data) {
+            Result<T> result = new Result<>();
+            result.setCode(200);
+            result.setMessage("success");
+            result.setData(data);
+            return result;
+        }
+
+        public static <T> Result<T> error(String message) {
+            Result<T> result = new Result<>();
+            result.setCode(500);
+            result.setMessage(message);
+            return result;
+        }
+    }
+
+}

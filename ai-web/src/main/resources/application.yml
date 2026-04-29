@@ -1,0 +1,57 @@
+server:
+  port: 8080
+  address: 0.0.0.0
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: ai-web-analysis
+
+  # 数据库配置（可选，用于历史记录功能）
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME:ai_analysis}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Spring AI Alibaba 通义千问配置
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY}
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      model: qwen-plus
+
+# MyBatis Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.lingyi.ai.dal.dataobject
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.lingyi.ai: DEBUG
+    com.lingyi.ai.dal.mapper: DEBUG
+
+# HTTP 代理配置（公司内网访问外部 API 时需要）
+# http:
+#   proxy-host: ${HTTP_PROXY_HOST:}
+#   proxy-port: ${HTTP_PROXY_PORT:}
+#   proxy-user: ${HTTP_PROXY_USER:}        # 可选
+#   proxy-password: ${HTTP_PROXY_PASSWORD:} # 可选
+
+# 飞书推送配置
+feishu:
+  webhook:
+    enabled: ${FEISHU_WEBHOOK_ENABLED:false}
+    url: ${FEISHU_WEBHOOK_URL:}
+
+# 定时任务配置
+task:
+  daily-report:
+    enabled: ${DAILY_REPORT_ENABLED:true}
+    cron: "0 0 9 * * MON-FRI"

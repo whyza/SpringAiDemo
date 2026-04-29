@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电商 AI 日报分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --accent: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --bg: #0f172a;
+            --bg-card: #ffffff;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.06);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            background-image:
+                radial-gradient(ellipse at 0% 0%, rgba(99,102,241,0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(16,185,129,0.08) 0%, transparent 50%);
+            min-height: 100vh;
+            padding: 0;
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+
+        /* ===== 顶部导航 ===== */
+        .top-nav {
+            background: rgba(15,23,42,0.85);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 800;
+            color: white;
+            box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+        }
+
+        .nav-brand h1 { font-size: 1.15rem; font-weight: 600; color: white; }
+        .nav-brand .subtitle { font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+        .nav-tabs { display: flex; gap: 4px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; }
+
+        .nav-tab {
+            padding: 10px 28px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.55);
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-tab:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.06); }
+        .nav-tab.active {
+            color: white;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+        }
+
+        /* ===== Tab 内容 ===== */
+        .tab-content { display: none; padding: 32px 0; }
+        .tab-content.active { display: block; animation: fadeSlideIn 0.35s ease; }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ===== 通用卡片 ===== */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 28px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: box-shadow 0.3s;
+        }
+        .card:hover { box-shadow: var(--shadow-lg); }
+
+        .card-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .card-title .icon {
+            width: 34px; height: 34px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+        }
+
+        /* ===== 表单 ===== */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+        .form-group input {
+            padding: 12px 14px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            transition: all 0.25s;
+            background: #fafbfc;
+            font-family: inherit;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(99,102,241,0.08);
+        }
+
+        .btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
+
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            box-shadow: 0 4px 16px rgba(99,102,241,0.25);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99,102,241,0.35);
+        }
+        .btn-primary:disabled { transform: none; box-shadow: none; }
+
+        .btn-secondary { background: #f1f5f9; color: var(--text); }
+        .btn-secondary:hover { background: #e2e8f0; }
+
+        .btn-sm { padding: 9px 18px; font-size: 0.82rem; border-radius: 8px; }
+
+        /* ===== 加载 ===== */
+        .loading { display: none; text-align: center; padding: 48px; }
+        .loading.show { display: block; }
+        .spinner {
+            width: 44px; height: 44px;
+            border: 4px solid #e2e8f0;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin: 0 auto 14px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: var(--text-secondary); font-size: 0.9rem; }
+
+        /* ===== AI 流式输出控制台 ===== */
+        .console-output {
+            display: none;
+            background: #1e293b;
+            color: #10b981;
+            padding: 20px;
+            border-radius: var(--radius-sm);
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .console-output.show { display: block; animation: fadeSlideIn 0.3s; }
+
+        /* ===== 错误 ===== */
+        .error-message {
+            display: none;
+            background: #fef2f2;
+            color: var(--danger);
+            padding: 14px 18px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+            border-left: 4px solid var(--danger);
+            font-size: 0.88rem;
+        }
+        .error-message.show { display: block; animation: fadeSlideIn 0.3s; }
+
+        /* ===== 报告展示 ===== */
+        .report { display: none; }
+        .report.show { display: block; }
+
+        .report-banner {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 32px 36px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .report-banner::after {
+            content: '';
+            position: absolute; right: -20px; top: -20px;
+            width: 180px; height: 180px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+        }
+        .report-banner::before {
+            content: '';
+            position: absolute; right: 60px; bottom: -50px;
+            width: 140px; height: 140px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+        }
+        .report-date { font-size: 0.9rem; opacity: 0.8; margin-bottom: 8px; position: relative; z-index: 1; }
+        .report-summary { font-size: 1.25rem; font-weight: 600; position: relative; z-index: 1; line-height: 1.5; }
+
+        /* ===== 核心指标 ===== */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 14px;
+            padding: 22px 18px;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: all 0.3s;
+        }
+        .metric-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+        .metric-icon { font-size: 1.6rem; margin-bottom: 8px; }
+        .metric-label { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; }
+        .metric-value { font-size: 1.7rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+        .metric-change {
+            font-size: 0.8rem;
+            margin-top: 8px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: 600;
+        }
+        .metric-change.up { background: #ecfdf5; color: #059669; }
+        .metric-change.down { background: #fef2f2; color: #dc2626; }
+
+        /* ===== 健康度 ===== */
+        .health-section {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+        .health-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .health-title { font-size: 1rem; font-weight: 600; }
+        .health-subtitle { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+
+        .health-gauge {
+            width: 88px; height: 88px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        }
+        .health-gauge.excellent { background: linear-gradient(135deg, #10b981, #34d399); }
+        .health-gauge.good { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+        .health-gauge.fair { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+        .health-gauge.poor { background: linear-gradient(135deg, #ef4444, #f87171); }
+
+        .health-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .health-stat {
+            text-align: center;
+            padding: 16px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .health-stat-value { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+        .health-stat-label { font-size: 0.78rem; color: var(--text-secondary); }
+
+        /* ===== 结构化分析 ===== */
+        .structured-section { margin-bottom: 0; }
+        .analysis-card {
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 14px;
+            border-left: 4px solid;
+        }
+        .analysis-card.highlights { background: #ecfdf5; border-left-color: #10b981; }
+        .analysis-card.risks { background: #fef2f2; border-left-color: #ef4444; }
+        .analysis-card.suggestions { background: #fffbeb; border-left-color: #f59e0b; }
+
+        .analysis-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 14px; }
+        .analysis-list { list-style: none; }
+        .analysis-list li {
+            padding: 10px 0 10px 22px;
+            position: relative;
+            line-height: 1.7;
+            font-size: 0.88rem;
+            color: var(--text);
+        }
+        .analysis-list li::before {
+            content: "";
+            position: absolute; left: 0; top: 15px;
+            width: 7px; height: 7px;
+            background: var(--primary-light);
+            border-radius: 50%;
+        }
+
+        .priority-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            margin-right: 8px;
+        }
+        .priority-urgent { background: #dc2626; color: white; }
+        .priority-medium { background: #f59e0b; color: white; }
+        .priority-low { background: #10b981; color: white; }
+
+        /* ===== 完整报告 ===== */
+        .full-report-toggle {
+            width: 100%;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.04), rgba(139,92,246,0.04));
+            border: 2px solid rgba(99,102,241,0.12);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--primary);
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: inherit;
+        }
+        .full-report-toggle:hover {
+            background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08));
+            border-color: rgba(99,102,241,0.25);
+        }
+        .full-report-toggle .arrow { transition: transform 0.3s; font-size: 0.85rem; }
+        .full-report-toggle.open .arrow { transform: rotate(180deg); }
+
+        .full-report-content {
+            display: none;
+            margin-top: 16px;
+            padding: 28px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            line-height: 1.85;
+            font-size: 0.9rem;
+        }
+        .full-report-content.show { display: block; animation: fadeSlideIn 0.3s; }
+
+        /* Markdown */
+        .full-report-content h1 { font-size: 1.4rem; color: var(--text); margin: 24px 0 14px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-light); }
+        .full-report-content h2 { font-size: 1.2rem; color: var(--text); margin: 20px 0 12px; }
+        .full-report-content h3 { font-size: 1.05rem; color: var(--text); margin: 16px 0 10px; }
+        .full-report-content p { margin: 10px 0; color: var(--text); }
+        .full-report-content strong { color: var(--primary-dark); }
+        .full-report-content ul, .full-report-content ol { padding-left: 24px; margin: 10px 0; }
+        .full-report-content li { margin: 6px 0; }
+        .full-report-content table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.85rem; border-radius: 8px; overflow: hidden; }
+        .full-report-content th, .full-report-content td { padding: 12px 14px; border: 1px solid var(--border); text-align: left; }
+        .full-report-content th { background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; font-weight: 600; }
+        .full-report-content tr:nth-child(even) { background: #f8fafc; }
+        .full-report-content tr:hover { background: #f1f5f9; }
+        .full-report-content blockquote { padding: 14px 18px; margin: 14px 0; border-left: 4px solid var(--primary-light); background: #f0f0ff; border-radius: 0 8px 8px 0; }
+        .full-report-content code { background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 0.84rem; }
+        .full-report-content hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+        /* ===== 历史记录 ===== */
+        .history-filter {
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .filter-group { display: flex; flex-direction: column; gap: 6px; }
+        .filter-group label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; }
+        .filter-group input {
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.88rem;
+            background: #fafbfc;
+            transition: all 0.25s;
+            font-family: inherit;
+        }
+        .filter-group input:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(99,102,241,0.08); }
+
+        .history-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .history-table thead th {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            padding: 12px 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            border-bottom: 2px solid var(--border);
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+        .history-table tbody tr { transition: background 0.15s; cursor: pointer; }
+        .history-table tbody tr:hover { background: #f8fafc; }
+        .history-table tbody td { padding: 12px 10px; font-size: 0.85rem; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+        .badge-excellent { background: #ecfdf5; color: #059669; }
+        .badge-good { background: #eff6ff; color: #2563eb; }
+        .badge-warning { background: #fffbeb; color: #d97706; }
+        .badge-danger { background: #fef2f2; color: #dc2626; }
+
+        .growth-up { color: #059669; font-weight: 600; }
+        .growth-down { color: #dc2626; font-weight: 600; }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            margin-top: 24px;
+            padding-top: 20px;
+        }
+        .page-btn {
+            min-width: 36px; height: 36px;
+            padding: 0 10px;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+        }
+        .page-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .page-info { font-size: 0.85rem; color: var(--text-secondary); margin: 0 10px; }
+
+        .empty-state { text-align: center; padding: 64px 20px; color: var(--text-secondary); }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.35; }
+        .empty-state .title { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+        .empty-state p { font-size: 0.9rem; }
+
+        /* ===== 详情弹窗 ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,0.6);
+            backdrop-filter: blur(6px);
+            z-index: 1000;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px 20px;
+            overflow-y: auto;
+        }
+        .modal-overlay.show { display: flex; animation: fadeIn 0.2s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal {
+            background: white;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 1000px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.25);
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 22px 28px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 1;
+            border-radius: 20px 20px 0 0;
+        }
+        .modal-header h3 { font-size: 1.05rem; }
+        .modal-close {
+            width: 36px; height: 36px;
+            border: none;
+            background: #f1f5f9;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-close:hover { background: #e2e8f0; }
+
+        .modal-body { padding: 28px; }
+
+        /* 周期总结弹窗样式 */
+        .summary-modal { max-width: 900px; }
+
+        #summaryBody .summary-content {
+            line-height: 1.9;
+            font-size: 0.95rem;
+        }
+
+        #summaryBody .summary-content h1 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin: 28px 0 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-light);
+        }
+
+        #summaryBody .summary-content h2 {
+            font-size: 1.25rem;
+            color: var(--text);
+            margin: 24px 0 14px;
+            padding-left: 12px;
+            border-left: 4px solid var(--primary);
+        }
+
+        #summaryBody .summary-content h3 {
+            font-size: 1.05rem;
+            color: var(--text);
+            margin: 20px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #summaryBody .summary-content p {
+            margin: 12px 0;
+            color: var(--text);
+            line-height: 1.8;
+        }
+
+        #summaryBody .summary-content strong {
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+
+        #summaryBody .summary-content ul, #summaryBody .summary-content ol {
+            padding-left: 24px;
+            margin: 12px 0;
+        }
+
+        #summaryBody .summary-content li {
+            margin: 8px 0;
+            line-height: 1.7;
+        }
+
+        /* 周期总结高亮区块 */
+        #summaryBody .summary-content .highlight,
+        #summaryBody .summary-content .risk,
+        #summaryBody .summary-content .suggestion {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin: 16px 0;
+            border: 1px solid;
+        }
+
+        #summaryBody .summary-content .highlight {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border-color: #a7f3d0;
+        }
+
+        #summaryBody .summary-content .risk {
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            border-color: #fecaca;
+        }
+
+        #summaryBody .summary-content .suggestion {
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            border-color: #fde68a;
+        }
+
+        #summaryBody .summary-content blockquote {
+            padding: 14px 18px;
+            margin: 16px 0;
+            border-left: 4px solid var(--primary-light);
+            background: linear-gradient(135deg, #f0f0ff, #f8f8ff);
+            border-radius: 0 8px 8px 0;
+            color: var(--text);
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 1024px) {
+            .form-grid { grid-template-columns: repeat(2, 1fr); }
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .nav-inner { flex-direction: column; height: auto; padding: 14px 0; gap: 12px; }
+            .nav-tabs { width: 100%; }
+            .nav-tab { flex: 1; text-align: center; padding: 10px; font-size: 0.82rem; }
+            .form-grid { grid-template-columns: 1fr; }
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+            .health-stats { grid-template-columns: 1fr; }
+            .history-filter { flex-direction: column; }
+            .btn-group { flex-direction: column; }
+            .btn { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部导航 -->
+    <nav class="top-nav">
+        <div class="nav-inner">
+            <div class="nav-brand">
+                <div class="logo-icon">AI</div>
+                <div>
+                    <h1>AI销量分析系统</h1>
+                    <div class="subtitle">基于通义千问大模型</div>
+                </div>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('generate')">生成报告</button>
+                <button class="nav-tab" onclick="switchTab('history')">历史记录</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <!-- ===== Tab 1: 生成报告 ===== -->
+        <div class="tab-content active" id="tab-generate">
+            <div class="card">
+                <div class="card-title">
+                    <div class="icon" style="background:#eff6ff;color:#3b82f6;">&#x1F4DD;</div>
+                    数据输入
+                </div>
+                <div class="error-message" id="errorMessage"></div>
+                <form id="dataForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>报告日期</label>
+                            <input type="date" id="reportDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>今日销量</label>
+                            <input type="number" id="todaySales" placeholder="12000" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>昨日销量</label>
+                            <input type="number" id="yesterdaySales" placeholder="11234" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>今日销售额（元）</label>
+                            <input type="number" id="todayRevenue" placeholder="987623" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>昨日销售额（元）</label>
+                            <input type="number" id="yesterdayRevenue" placeholder="965443" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>上涨链接数</label>
+                            <input type="number" id="risingLinks" placeholder="124" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>下跌链接数</label>
+                            <input type="number" id="fallingLinks" placeholder="45" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>7天未出单链接数</label>
+                            <input type="number" id="noOrderLinks" placeholder="129" required min="0">
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">生成分析报告</button>
+                        <button type="button" class="btn btn-secondary" onclick="fillDemoData()">填充示例数据</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">重置</button>
+                    </div>
+                </form>
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <div class="loading-text">AI 正在深度分析数据，请稍候...</div>
+                </div>
+                <!-- AI 流式输出控制台 -->
+                <div class="console-output" id="consoleOutput"></div>
+            </div>
+
+            <!-- 报告展示 -->
+            <div class="report" id="reportCard">
+                <div class="report-banner">
+                    <div class="report-date" id="reportDateDisplay"></div>
+                    <div class="report-summary" id="reportSummary"></div>
+                </div>
+                <div class="metrics-grid" id="metricsGrid"></div>
+                <div class="health-section" id="healthSection"></div>
+                <div class="card structured-section" id="structuredSection"></div>
+                <div class="card">
+                    <button class="full-report-toggle" onclick="toggleFullReport()">
+                        <span>查看完整报告</span>
+                        <span class="arrow">▼</span>
+                    </button>
+                    <div class="full-report-content" id="fullReportContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Tab 2: 历史记录 ===== -->
+        <div class="tab-content" id="tab-history">
+            <div class="card">
+                <div class="card-title">
+                    <div class="icon" style="background:#ecfdf5;color:#10b981;">&#x1F4CA;</div>
+                    历史记录
+                </div>
+                <div class="history-filter">
+                    <div class="filter-group">
+                        <label>开始日期</label>
+                        <input type="date" id="historyStartDate">
+                    </div>
+                    <div class="filter-group">
+                        <label>结束日期</label>
+                        <input type="date" id="historyEndDate">
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="queryHistory()">查询</button>
+                    <button class="btn btn-secondary btn-sm" onclick="resetHistoryFilter()">重置</button>
+                    <button class="btn btn-primary btn-sm" onclick="showPeriodSummary()">📊 周期总结</button>
+                </div>
+                <div id="historyLoading" class="loading">
+                    <div class="spinner"></div>
+                    <div class="loading-text">加载中...</div>
+                </div>
+                <div id="historyTableContainer"></div>
+                <div class="pagination" id="historyPagination"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 详情弹窗 -->
+    <div class="modal-overlay" id="detailModal" onclick="closeModalOutside(event)">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">报告详情</h3>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- 周期总结弹窗 -->
+    <div class="modal-overlay" id="summaryModal" onclick="closeSummaryModalOutside(event)">
+        <div class="modal summary-modal">
+            <div class="modal-header">
+                <h3>📊 周期总结报告</h3>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-sm btn-secondary" onclick="regeneratePeriodSummary()" title="重新生成">🔄 刷新</button>
+                    <button class="modal-close" onclick="closeSummaryModal()">✕</button>
+                </div>
+            </div>
+            <div class="modal-body" id="summaryBody">
+                <div class="loading show">
+                    <div class="spinner"></div>
+                    <div class="loading-text">AI 正在分析周期数据...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://192.168.110.59:8080";
+        let currentPage = 1;
+        const pageSize = 10;
+
+        // ===== 简单的 Markdown 解析（marked 加载失败时的后备方案） =====
+        function simpleMarkdownParse(md) {
+            if (!md) return '';
+            let html = md
+                // 表格 - 先处理
+                .replace(/^\|(.+)\|$/gm, function(m, content) {
+                    const cells = content.split('|').map(c => c.trim());
+                    if (cells.every(c => c.match(/^[-:]+$/))) {
+                        return ''; // 分隔行
+                    }
+                    return '<tr>' + cells.map(c => '<td>' + c + '</td>').join('') + '</tr>';
+                })
+                .replace(/^<tr>.*<\/tr>$/gm, function(m) {
+                    return '<table>' + m + '</table>';
+                })
+                // 标题
+                .replace(/^###\s+(.+)/gm, '<h3>$1</h3>')
+                .replace(/^##\s+(.+)/gm, '<h2>$1</h2>')
+                .replace(/^#\s+(.+)/gm, '<h1>$1</h1>')
+                // 加粗
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                // 斜体
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                // 行内代码
+                .replace(/`(.+?)`/g, '<code>$1</code>')
+                // 引用
+                .replace(/^>\s+(.+)/gm, '<blockquote>$1</blockquote>')
+                // 列表项
+                .replace(/^[-*]\s+(.+)/gm, '<li>$1</li>')
+                // 换行
+                .replace(/\n/g, '<br>');
+            // 包裹表格
+            html = html.replace(/(<table>.*<\/table>)/gs, function(m) {
+                return m.replace(/<tr>/g, '<tbody><tr>').replace(/<\/tr>(?!\s*<tr>)/g, '</tr></tbody>');
+            });
+            return html;
+        }
+
+        // 获取 Markdown 解析函数（优先使用 marked，失败则用简单解析）
+        function getMarkdownParser() {
+            if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
+                return marked.parse;
+            }
+            console.warn('marked.js 未加载，使用简单解析');
+            return simpleMarkdownParse;
+        }
+
+        // ===== 初始化 =====
+        document.addEventListener('DOMContentLoaded', () => {
+            setYesterday('reportDate');
+        });
+
+        function setYesterday(id) {
+            const d = new Date();
+            d.setDate(d.getDate() - 1);
+            document.getElementById(id).value = d.toISOString().split('T')[0];
+        }
+
+        // ===== Tab 切换 =====
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-tab').forEach((t, i) => {
+                t.classList.toggle('active', (tab === 'generate' && i === 0) || (tab === 'history' && i === 1));
+            });
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            if (tab === 'history') autoQueryHistory();
+        }
+
+        // ===== 填充示例数据 =====
+        function fillDemoData() {
+            document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('todaySales').value = 12000;
+            document.getElementById('yesterdaySales').value = 11234;
+            document.getElementById('todayRevenue').value = 987623;
+            document.getElementById('yesterdayRevenue').value = 965443;
+            document.getElementById('risingLinks').value = 124;
+            document.getElementById('fallingLinks').value = 45;
+            document.getElementById('noOrderLinks').value = 129;
+        }
+
+        function resetForm() {
+            document.getElementById('dataForm').reset();
+            document.getElementById('reportCard').classList.remove('show');
+            document.getElementById('errorMessage').classList.remove('show');
+            setYesterday('reportDate');
+        }
+
+        // ===== 生成报告（Loading 等待） =====
+        document.getElementById('dataForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const errorEl = document.getElementById('errorMessage');
+
+            const data = {
+                reportDate: document.getElementById('reportDate').value,
+                todaySales: parseInt(document.getElementById('todaySales').value),
+                yesterdaySales: parseInt(document.getElementById('yesterdaySales').value),
+                todayRevenue: parseFloat(document.getElementById('todayRevenue').value),
+                yesterdayRevenue: parseFloat(document.getElementById('yesterdayRevenue').value),
+                risingLinks: parseInt(document.getElementById('risingLinks').value),
+                fallingLinks: parseInt(document.getElementById('fallingLinks').value),
+                noOrderLinks: parseInt(document.getElementById('noOrderLinks').value)
+            };
+
+            btn.disabled = true;
+            loading.classList.add('show');
+            errorEl.classList.remove('show');
+            document.getElementById('reportCard').classList.remove('show');
+            document.getElementById('consoleOutput').classList.remove('show');
+
+            try {
+                const res = await fetch(`${API_BASE}/api/daily-report/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || '请求失败，请检查服务是否启动');
+                }
+
+                const result = await res.json();
+
+                if (result.code === 200 && result.data) {
+                    renderReport(result.data);
+                } else {
+                    throw new Error(result.message || '生成失败');
+                }
+
+            } catch (err) {
+                errorEl.textContent = err.message;
+                errorEl.classList.add('show');
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+
+        // ===== 渲染报告 =====
+        function renderReport(data) {
+            const d = data.data || {};
+            document.getElementById('reportDateDisplay').textContent = '报告日期：' + data.reportDate;
+            document.getElementById('reportSummary').textContent = data.summary || '数据已分析完成';
+
+            // 指标
+            document.getElementById('metricsGrid').innerHTML = `
+                <div class="metric-card">
+                    <div class="metric-icon">📦</div>
+                    <div class="metric-label">今日销量</div>
+                    <div class="metric-value">${(d.todaySales||0).toLocaleString()}</div>
+                    <div class="metric-change ${(d.salesGrowthRate||0)>=0?'up':'down'}">
+                        ${(d.salesGrowthRate||0)>=0?'↑':'↓'} ${((d.salesGrowthRate||0)>=0?'+':'')}${(d.salesGrowthRate||0).toFixed(2)}%
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">💰</div>
+                    <div class="metric-label">今日销售额</div>
+                    <div class="metric-value">${d.todayRevenue||'-'}</div>
+                    <div class="metric-change ${(d.revenueGrowthRate||0)>=0?'up':'down'}">
+                        ${(d.revenueGrowthRate||0)>=0?'↑':'↓'} ${((d.revenueGrowthRate||0)>=0?'+':'')}${(d.revenueGrowthRate||0).toFixed(2)}%
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">📈</div>
+                    <div class="metric-label">上涨链接</div>
+                    <div class="metric-value">${d.risingLinks||0}</div>
+                    <div class="metric-label">个商品销量上涨</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">📉</div>
+                    <div class="metric-label">下跌链接</div>
+                    <div class="metric-value">${d.fallingLinks||0}</div>
+                    <div class="metric-label">个商品销量下跌</div>
+                </div>`;
+
+            // 健康度
+            const hs = data.healthScore || 0;
+            let hc = 'poor';
+            if (hs>=80) hc='excellent'; else if(hs>=60) hc='good'; else if(hs>=40) hc='fair';
+
+            document.getElementById('healthSection').innerHTML = `
+                <div class="health-header">
+                    <div>
+                        <div class="health-title">商品健康度</div>
+                        <div class="health-subtitle">综合评分</div>
+                    </div>
+                    <div class="health-gauge ${hc}">${hs}</div>
+                </div>
+                <div class="health-stats">
+                    <div class="health-stat">
+                        <div class="health-stat-value" style="color:#10b981;">${d.risingLinks||0}</div>
+                        <div class="health-stat-label">上涨商品</div>
+                    </div>
+                    <div class="health-stat">
+                        <div class="health-stat-value" style="color:#ef4444;">${d.fallingLinks||0}</div>
+                        <div class="health-stat-label">下跌商品</div>
+                    </div>
+                    <div class="health-stat">
+                        <div class="health-stat-value" style="color:#f59e0b;">${d.noOrderLinks||0}</div>
+                        <div class="health-stat-label">7天未出单</div>
+                    </div>
+                </div>`;
+
+            // 结构化摘要
+            renderStructured(data);
+
+            // 完整报告（优先使用 keyReport，没有则用 fullReport）
+            const reportContent = data.keyReport || data.fullReport;
+            if (reportContent) {
+                const parseMd = getMarkdownParser();
+                document.getElementById('fullReportContent').innerHTML = parseMd(reportContent);
+            }
+
+            document.getElementById('reportCard').classList.add('show');
+            document.getElementById('reportCard').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function renderStructured(data) {
+            const c = document.getElementById('structuredSection');
+            const h = data.highlights||[];
+            const r = data.risks||[];
+            const s = data.suggestions||[];
+            if (!h.length && !r.length && !s.length) { c.innerHTML=''; return; }
+            let html = '';
+            if (h.length) html += `<div class="analysis-card highlights">
+                <div class="analysis-title">亮点分析</div>
+                <ul class="analysis-list">${h.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
+            if (r.length) html += `<div class="analysis-card risks">
+                <div class="analysis-title">风险预警</div>
+                <ul class="analysis-list">${r.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
+            if (s.length) html += `<div class="analysis-card suggestions">
+                <div class="analysis-title">运营建议</div>
+                <ul class="analysis-list">${s.map(renderSuggestion).join('')}</ul></div>`;
+            c.innerHTML = html;
+        }
+
+        function renderSuggestion(item) {
+            // 后端已返回【优先级 1/2/3】格式，直接显示，不添加额外标签
+            return `<li>${esc(item)}</li>`;
+        }
+
+        function esc(t) { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+
+        function toggleFullReport() {
+            const c = document.getElementById('fullReportContent');
+            const btn = c.previousElementSibling;
+            c.classList.toggle('show');
+            btn.classList.toggle('open');
+        }
+
+        // ===== 历史记录 =====
+        function autoQueryHistory() {
+            const s = document.getElementById('historyStartDate').value;
+            const e = document.getElementById('historyEndDate').value;
+            if (!s && !e) {
+                // 默认查最近7天
+                const end = new Date();
+                const start = new Date();
+                start.setDate(start.getDate() - 7);
+                document.getElementById('historyStartDate').value = start.toISOString().split('T')[0];
+                document.getElementById('historyEndDate').value = end.toISOString().split('T')[0];
+            }
+            queryHistory();
+        }
+
+        function resetHistoryFilter() {
+            document.getElementById('historyStartDate').value = '';
+            document.getElementById('historyEndDate').value = '';
+            currentPage = 1;
+            autoQueryHistory();
+        }
+
+        async function queryHistory() {
+            const loading = document.getElementById('historyLoading');
+            const container = document.getElementById('historyTableContainer');
+            loading.classList.add('show');
+            container.innerHTML = '';
+            document.getElementById('historyPagination').innerHTML = '';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/daily-report/list`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        startDate: document.getElementById('historyStartDate').value || null,
+                        endDate: document.getElementById('historyEndDate').value || null,
+                        pageNum: currentPage,
+                        pageSize: pageSize
+                    })
+                });
+                if (!res.ok) throw new Error('请求失败');
+                const result = await res.json();
+                if (result.code === 200) {
+                    renderHistoryTable(result.data);
+                } else {
+                    container.innerHTML = '<div class="empty-state"><p>查询失败</p></div>';
+                }
+            } catch (err) {
+                container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><div class="title">加载失败</div><p>${err.message}</p></div>`;
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        function renderHistoryTable(page) {
+            const container = document.getElementById('historyTableContainer');
+            const list = page.records || page.list || [];
+            // 兼容 MyBatis Plus Page (current/size) 和 PageInfo (pageNum/pageSize)
+            const pageNum = page.current || page.pageNum || 1;
+            const totalPages = page.pages || 1;
+
+            if (!list.length) {
+                container.innerHTML = `<div class="empty-state">
+                    <div class="icon">📭</div>
+                    <div class="title">暂无数据</div>
+                    <p>当前日期范围内没有报告记录</p>
+                </div>`;
+                document.getElementById('historyPagination').innerHTML = '';
+                return;
+            }
+
+            let html = `<table class="history-table">
+                <thead><tr>
+                    <th>日期</th>
+                    <th>今日销量</th>
+                    <th>昨日销量</th>
+                    <th>销量对比</th>
+                    <th>今日销售额</th>
+                    <th>昨日销售额</th>
+                    <th>销售额环比</th>
+                    <th>上涨/下跌</th>
+                    <th>健康度</th>
+                </tr></thead><tbody>`;
+
+            list.forEach(row => {
+                const badgeClass = row.healthScore >= 70 ? 'badge-excellent' : row.healthScore >= 50 ? 'badge-warning' : 'badge-danger';
+                const badgeText = row.healthScore >= 80 ? '优秀' : row.healthScore >= 60 ? '良好' : row.healthScore >= 40 ? '一般' : '较差';
+                const salesChange = row.salesGrowthRate != null
+                    ? `<span class="${row.salesGrowthRate>=0?'growth-up':'growth-down'}">${row.salesGrowthRate>=0?'+':''}${row.salesGrowthRate.toFixed(2)}%</span>`
+                    : '-';
+                const revenueChange = row.revenueGrowthRate != null
+                    ? `<span class="${row.revenueGrowthRate>=0?'growth-up':'growth-down'}">${row.revenueGrowthRate>=0?'+':''}${row.revenueGrowthRate.toFixed(2)}%</span>`
+                    : '-';
+
+                html += `<tr onclick="viewDetail(${row.id})">
+                    <td><strong>${row.reportDate}</strong></td>
+                    <td>${(row.todaySales||0).toLocaleString()}</td>
+                    <td>${(row.yesterdaySales||0).toLocaleString()}</td>
+                    <td>${salesChange}</td>
+                    <td>${row.todayRevenue||'-'}</td>
+                    <td>${row.yesterdayRevenue||'-'}</td>
+                    <td>${revenueChange}</td>
+                    <td><span class="growth-up">${row.risingLinks||0}</span> / <span class="growth-down">${row.fallingLinks||0}</span></td>
+                    <td><span class="badge ${badgeClass}">${badgeText} ${row.healthScore||0}</span></td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+
+            // 分页
+            renderPagination(pageNum, totalPages, page);
+        }
+
+        function renderPagination(currentPage, totalPages, page) {
+            const el = document.getElementById('historyPagination');
+            if (!page || totalPages <= 1) { el.innerHTML = ''; return; }
+
+            let html = '';
+            html += `<button class="page-btn" ${currentPage<=1?'disabled':''} onclick="goPage(${currentPage-1})">‹</button>`;
+
+            const start = Math.max(1, currentPage - 2);
+            const end = Math.min(totalPages, currentPage + 2);
+
+            if (start > 1) {
+                html += `<button class="page-btn" onclick="goPage(1)">1</button>`;
+                if (start > 2) html += `<span class="page-info">...</span>`;
+            }
+
+            for (let i = start; i <= end; i++) {
+                html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+            }
+
+            if (end < totalPages) {
+                if (end < totalPages - 1) html += `<span class="page-info">...</span>`;
+                html += `<button class="page-btn" onclick="goPage(${totalPages})">${totalPages}</button>`;
+            }
+
+            html += `<button class="page-btn" ${currentPage>=totalPages?'disabled':''} onclick="goPage(${currentPage+1})">›</button>`;
+            html += `<span class="page-info">共 ${page.total} 条</span>`;
+
+            el.innerHTML = html;
+        }
+
+        function goPage(p) {
+            currentPage = p;
+            queryHistory();
+        }
+
+        // ===== 详情弹窗 =====
+        async function viewDetail(id) {
+            const overlay = document.getElementById('detailModal');
+            const body = document.getElementById('modalBody');
+            overlay.classList.add('show');
+            document.getElementById('modalTitle').textContent = '加载中...';
+            body.innerHTML = '<div class="loading show"><div class="spinner"></div><div class="loading-text">加载报告中...</div></div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/daily-report/${id}`);
+                if (!res.ok) throw new Error('请求失败');
+                const result = await res.json();
+                if (result.code === 200) {
+                    renderDetailModal(result.data);
+                } else {
+                    throw new Error(result.message || '加载失败');
+                }
+            } catch (err) {
+                body.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><div class="title">加载失败</div><p>${err.message}</p></div>`;
+            }
+        }
+
+        function renderDetailModal(data) {
+            const d = data.data || {};
+            document.getElementById('modalTitle').textContent = '报告详情 - ' + data.reportDate;
+
+            const hs = data.healthScore || 0;
+            let hc = 'poor';
+            if (hs>=80) hc='excellent'; else if(hs>=60) hc='good'; else if(hs>=40) hc='fair';
+
+            let html = `
+                <div class="report-banner" style="margin-bottom:20px;">
+                    <div class="report-date">报告日期：${data.reportDate}</div>
+                    <div class="report-summary">${data.summary||'数据已分析完成'}</div>
+                </div>
+
+                <div class="metrics-grid" style="margin-bottom:20px;">
+                    <div class="metric-card">
+                        <div class="metric-label">今日销量</div>
+                        <div class="metric-value">${(d.todaySales||0).toLocaleString()}</div>
+                        <div class="metric-change ${(d.salesGrowthRate||0)>=0?'up':'down'}">${(d.salesGrowthRate||0)>=0?'+':''}${(d.salesGrowthRate||0).toFixed(2)}%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">今日销售额</div>
+                        <div class="metric-value">${d.todayRevenue||'-'}</div>
+                        <div class="metric-change ${(d.revenueGrowthRate||0)>=0?'up':'down'}">${(d.revenueGrowthRate||0)>=0?'+':''}${(d.revenueGrowthRate||0).toFixed(2)}%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">上涨/下跌</div>
+                        <div class="metric-value">${d.risingLinks||0}/${d.fallingLinks||0}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">7天未出单</div>
+                        <div class="metric-value">${d.noOrderLinks||0}</div>
+                    </div>
+                </div>
+
+                <div class="health-section" style="margin-bottom:20px;">
+                    <div class="health-header">
+                        <div>
+                            <div class="health-title">商品健康度</div>
+                            <div class="health-subtitle">综合评分</div>
+                        </div>
+                        <div class="health-gauge ${hc}">${hs}</div>
+                    </div>
+                </div>`;
+
+            // 结构化
+            const h = data.highlights||[];
+            const r = data.risks||[];
+            const s = data.suggestions||[];
+            if (h.length) html += `<div class="analysis-card highlights" style="margin-bottom:14px;">
+                <div class="analysis-title">亮点分析</div>
+                <ul class="analysis-list">${h.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
+            if (r.length) html += `<div class="analysis-card risks" style="margin-bottom:14px;">
+                <div class="analysis-title">风险预警</div>
+                <ul class="analysis-list">${r.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`;
+            if (s.length) html += `<div class="analysis-card suggestions" style="margin-bottom:14px;">
+                <div class="analysis-title">运营建议</div>
+                <ul class="analysis-list">${s.map(renderSuggestion).join('')}</ul></div>`;
+
+            // 完整报告（详情弹窗中默认展开，优先使用 keyReport）
+            const reportContent = data.keyReport || data.fullReport;
+            if (reportContent) {
+                const parseMd = getMarkdownParser();
+                html += `<div style="margin-top:24px;">
+                    <button class="full-report-toggle" onclick="this.nextElementSibling.classList.toggle('show');this.classList.toggle('open');">
+                        <span>完整报告</span><span class="arrow">▼</span>
+                    </button>
+                    <div class="full-report-content show">${parseMd(reportContent)}</div>
+                </div>`;
+            }
+
+            document.getElementById('modalBody').innerHTML = html;
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('show');
+        }
+
+        function closeModalOutside(e) {
+            if (e.target === document.getElementById('detailModal')) closeModal();
+        }
+
+        // ===== 周期总结 =====
+        async function showPeriodSummary() {
+            const startDate = document.getElementById('historyStartDate').value;
+            const endDate = document.getElementById('historyEndDate').value;
+
+            if (!startDate || !endDate) {
+                alert('请先选择开始日期和结束日期');
+                return;
+            }
+
+            const overlay = document.getElementById('summaryModal');
+            const body = document.getElementById('summaryBody');
+            overlay.classList.add('show');
+            body.innerHTML = '<div class="loading show"><div class="spinner"></div><div class="loading-text">AI 正在分析周期数据，请稍候...</div></div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/daily-report/summary`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        startDate: startDate,
+                        endDate: endDate,
+                        pageNum: 1,
+                        pageSize: 100
+                    })
+                });
+
+                if (!res.ok) throw new Error('请求失败');
+                const result = await res.json();
+
+                if (result.code === 200) {
+                    const parseMd = getMarkdownParser();
+                    const content = parseMd(result.data);
+                    document.getElementById('summaryBody').innerHTML = `<div class="summary-content">${content}</div>`;
+                    // 自动添加样式类到亮点/风险/建议区块
+                    applySummaryStyles();
+                } else {
+                    throw new Error(result.message || '总结失败');
+                }
+            } catch (err) {
+                body.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><div class="title">总结失败</div><p>${err.message}</p></div>`;
+            }
+        }
+
+        // 为周期总结内容添加样式类
+        function applySummaryStyles() {
+            const body = document.getElementById('summaryBody');
+            const content = body.querySelector('.summary-content');
+            if (!content) return;
+
+            // 为 h3 标题添加 emoji（如果没有）
+            content.querySelectorAll('h3').forEach(h3 => {
+                const text = h3.textContent.trim();
+                const emojiMap = {
+                    '周期趋势': '📈',
+                    '周期亮点': '🌟',
+                    '周期风险': '⚠️',
+                    '商品结构': '📦',
+                    '运营建议': '💡'
+                };
+                for (const [key, emoji] of Object.entries(emojiMap)) {
+                    if (text.includes(key) && !text.includes(emoji)) {
+                        h3.textContent = emoji + ' ' + text;
+                        break;
+                    }
+                }
+            });
+        }
+
+        // 重新生成周期总结
+        async function regeneratePeriodSummary() {
+            const startDate = document.getElementById('historyStartDate').value;
+            const endDate = document.getElementById('historyEndDate').value;
+
+            if (!startDate || !endDate) {
+                alert('请先选择开始日期和结束日期');
+                return;
+            }
+
+            const body = document.getElementById('summaryBody');
+            body.innerHTML = '<div class="loading show"><div class="spinner"></div><div class="loading-text">🔄 正在重新生成周期总结...</div></div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/daily-report/summary`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        startDate: startDate,
+                        endDate: endDate,
+                        forceRefresh: true
+                    })
+                });
+
+                if (!res.ok) throw new Error('请求失败');
+                const result = await res.json();
+
+                if (result.code === 200) {
+                    const parseMd = getMarkdownParser();
+                    const content = parseMd(result.data);
+                    document.getElementById('summaryBody').innerHTML = `<div class="summary-content">${content}</div>`;
+                    applySummaryStyles();
+                } else {
+                    throw new Error(result.message || '总结失败');
+                }
+            } catch (err) {
+                body.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><div class="title">刷新失败</div><p>${err.message}</p></div>`;
+            }
+        }
+
+        function closeSummaryModal() {
+            document.getElementById('summaryModal').classList.remove('show');
+        }
+
+        function closeSummaryModalOutside(e) {
+            if (e.target === document.getElementById('summaryModal')) closeSummaryModal();
+        }
+
+        // ESC 关闭弹窗
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                closeModal();
+                closeSummaryModal();
+            }
+        });
+    </script>
+</body>
+</html>

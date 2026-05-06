@@ -4,6 +4,9 @@ import lombok.Data;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -18,6 +21,7 @@ public class EcommerceDataDTO {
     /**
      * 报告日期（可选，默认为今天）
      */
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate reportDate;
 
     /**

@@ -1,25 +1,22 @@
 package com.lingyi.ai.service.config;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.annotation.Resource;
+import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
-import org.springframework.retry.support.RetryTemplate;
-import org.springframework.web.client.DefaultResponseErrorHandler;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import javax.net.ssl.*;
-import java.net.http.HttpClient;
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.util.concurrent.TimeUnit;
 
 /**
- * DashScope 大模型配置（排除自动配置后手动创建 Bean，绕过 SSL 证书校验）
+ * 大模型调用配置：直接使用 OkHttp 调用 MAAS OpenAI 兼容端点
  */
 @Slf4j
 @Configuration
@@ -35,60 +32,100 @@ public class DashScopeConfig {
     private String model;
 
     @Bean
-    public DashScopeApi dashScopeApi() {
-        log.info("创建 DashScopeApi, baseUrl={}, model={}", baseUrl, model);
-        return new DashScopeApi(baseUrl, apiKey, "", sslRestClientBuilder(), sslWebClientBuilder(), new DefaultResponseErrorHandler());
+    public OkHttpClient maasOkHttpClient() {
+        return new OkHttpClient.Builder()
+                .sslSocketFactory(sslSocketFactory(), trustAllManager())
+                .hostnameVerifier((hostname, session) -> true)
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
+                .build();
     }
 
-    @Bean
-    public DashScopeChatModel dashScopeChatModel(DashScopeApi dashScopeApi) {
-        return new DashScopeChatModel(dashScopeApi, dashScopeChatOptions(), null, retryTemplate());
+    private ObjectMapper maasObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return mapper;
     }
 
-    @Bean
-    public DashScopeChatOptions dashScopeChatOptions() {
-        return DashScopeChatOptions.builder().withModel(model).build();
-    }
-
-    @Bean
-    public RetryTemplate retryTemplate() {
-        return RetryTemplate.builder().maxAttempts(3).fixedBackoff(1000).build();
-    }
-
-    /**
-     * 绕过 SSL 验证的 RestClient.Builder
-     */
-    private RestClient.Builder sslRestClientBuilder() {
-        return RestClient.builder()
-                .requestFactory(new JdkClientHttpRequestFactory(createInsecureHttpClient()));
-    }
-
-    private WebClient.Builder sslWebClientBuilder() {
-        return WebClient.builder();
-    }
-
-    /**
-     * 创建信任所有证书的 HTTP 客户端
-     */
-    private HttpClient createInsecureHttpClient() {
+    public String callChatCompletion(String systemPrompt, String userPrompt) {
         try {
-            X509TrustManager tm = new TrustAllManager();
-            SSLContext sc = SSLContext.getInstance("TLS");
-            sc.init(null, new TrustManager[]{tm}, new SecureRandom());
-            SSLParameters sslParams = sc.getDefaultSSLParameters();
-            sslParams.setEndpointIdentificationAlgorithm(null);
-            return HttpClient.newBuilder()
-                    .sslContext(sc)
-                    .sslParameters(sslParams)
+            String endpoint = baseUrl + "/compatible-mode/v1/chat/completions";
+            String json = maasObjectMapper().writeValueAsString(new Object() {
+                public String model = DashScopeConfig.this.model;
+                public Message[] messages = new Message[]{
+                        new Message("system", systemPrompt),
+                        new Message("user", userPrompt)
+                };
+            });
+
+            Request request = new Request.Builder()
+                    .url(endpoint)
+                    .post(RequestBody.create(json, MediaType.parse("application/json; charset=utf-8")))
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
                     .build();
+
+            try (Response response = maasOkHttpClient().newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new RuntimeException("AI 接口返回错误，状态码: " + response.code() + ", 响应: " + response.body().string());
+                }
+                String respJson = response.body().string();
+                log.info("AI 响应: {} (前100字)", respJson.substring(0, Math.min(100, respJson.length())));
+                ChatCompletionResponse resp = maasObjectMapper().readValue(respJson, ChatCompletionResponse.class);
+                return resp.choices[0].message.content;
+            }
         } catch (Exception e) {
-            throw new RuntimeException("创建 HTTP 客户端失败", e);
+            throw new RuntimeException("AI 调用失败: " + e.getMessage(), e);
         }
     }
 
-    static class TrustAllManager implements X509TrustManager {
-        public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
-        public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-        public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+    private X509TrustManager trustAllManager() {
+        return new X509TrustManager() {
+            public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+            public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+            public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+        };
+    }
+
+    private SSLSocketFactory sslSocketFactory() {
+        try {
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, new TrustManager[]{trustAllManager()}, new SecureRandom());
+            return sc.getSocketFactory();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static class Message {
+        public String role;
+        public String content;
+
+        public Message(String role, String content) {
+            this.role = role;
+            this.content = content;
+        }
+    }
+
+    static class ChatCompletionResponse {
+        public String id;
+        public Choice[] choices;
+        public Usage usage;
+    }
+
+    static class Choice {
+        public ChatMessage message;
+        public String finish_reason;
+    }
+
+    static class ChatMessage {
+        public String role;
+        public String content;
+    }
+
+    static class Usage {
+        public int prompt_tokens;
+        public int completion_tokens;
+        public int total_tokens;
     }
 }

@@ -4,13 +4,9 @@ import com.lingyi.ai.model.dto.EcommerceDataDTO;
 import com.lingyi.ai.model.vo.DailyReportPushVO;
 import com.lingyi.ai.service.DailyReportService;
 import com.lingyi.ai.service.ai.AiAnalysisService;
+import com.lingyi.ai.service.config.DashScopeConfig;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -87,7 +83,7 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
             5. 300-500 字为宜
             """;
     @Resource
-    private ChatModel chatModel;
+    private DashScopeConfig dashScopeConfig;
 
     @Resource
     private DailyReportService dailyReportService;
@@ -98,19 +94,9 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
         log.info("调用 AI 分析（带系统提示词），system 长度：{}, user 长度：{}", systemPrompt.length(), userPrompt.length());
 
         try {
-            SystemMessage systemMessage = new SystemMessage(systemPrompt);
-            UserMessage userMessage = new UserMessage(userPrompt);
-
-            List<Message> messages = new ArrayList<>();
-            messages.add(systemMessage);
-            messages.add(userMessage);
-
-            Prompt chatPrompt = new Prompt(messages);
-            String response = chatModel.call(chatPrompt).getResult().getOutput().getContent();
-
+            String response = dashScopeConfig.callChatCompletion(systemPrompt, userPrompt);
             log.info("AI 分析完成，响应长度：{}", response.length());
             return response;
-
         } catch (Exception e) {
             log.error("AI 调用失败", e);
             throw new RuntimeException("AI 分析失败，请稍后重试：" + e.getMessage(), e);

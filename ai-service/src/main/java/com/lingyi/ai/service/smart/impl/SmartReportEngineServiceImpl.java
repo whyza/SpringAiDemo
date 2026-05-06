@@ -6,6 +6,7 @@ import com.lingyi.ai.service.ai.AiAnalysisService;
 import com.lingyi.ai.service.smart.SmartReportEngineService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import jakarta.annotation.Resource;
 import java.math.BigDecimal;
@@ -47,6 +48,26 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 triggered.getYellowAlerts().size(),
                 triggered.getGreenAlerts().size());
         return result;
+    }
+
+    @Override
+    public Flux<String> streamAnalyze(SmartReportRequestDTO request) {
+        log.info("智能报告流式分析开始，日期：{}", request.getReportDate());
+        request.applyDefaults();
+
+        SmartReportResultVO.TriggeredRulesVO triggered = evaluateRules(request);
+        String alertSummary = buildAlertSummary(triggered);
+
+        // 推送规则结果和摘要作为第一个事件
+        StringBuilder prefix = new StringBuilder();
+        prefix.append("[RULES]");
+        prefix.append(serializeRules(triggered));
+        prefix.append("[SUMMARY]");
+        prefix.append(alertSummary);
+
+        // AI 内容流式输出，完成后推送最终结果
+        return buildAiStream(request, triggered)
+                .concatWith(Flux.just("[METRICS]" + serializeMetrics(buildMetrics(request))));
     }
 
     /**
@@ -160,19 +181,22 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
      * 调用 AI 生成运营建议
      */
     private String generateAiContent(SmartReportRequestDTO req, SmartReportResultVO.TriggeredRulesVO triggered) {
-        BigDecimal revenueChange = calculateRevenueChange(req.getWeeklyRevenue(), req.getLastWeekRevenue());
-        String changeSymbol = revenueChange.compareTo(BigDecimal.ZERO) >= 0 ? "↑" : "↓";
-        String revenueChangeStr = changeSymbol + revenueChange.abs() + "%";
+        StringBuilder fullText = new StringBuilder();
+        try {
+            Flux<String> aiStream = buildAiStream(req, triggered);
+            aiStream.doOnNext(fullText::append).blockLast();
+        } catch (Exception e) {
+            log.warn("AI 调用失败，降级使用结构化模板", e);
+            return buildFallbackContent(req, triggered,
+                    formatRevenueChange(req), formatProfitChange(req));
+        }
+        return fullText.toString();
+    }
 
-        String profitChangeSymbol = req.getProfitRateChange().compareTo(BigDecimal.ZERO) >= 0 ? "↑" : "↓";
-        String profitChangeStr = profitChangeSymbol + req.getProfitRateChange().abs() + "pt";
-
-        String redAlerts = triggered.getRedAlerts().isEmpty() ? "无" : String.join("、", triggered.getRedAlerts());
-        String yellowAlerts = triggered.getYellowAlerts().isEmpty() ? "无" : String.join("、", triggered.getYellowAlerts());
-        String greenAlerts = triggered.getGreenAlerts().isEmpty() ? "无" : String.join("、", triggered.getGreenAlerts());
-
-        LocalDate date = req.getReportDate() != null ? req.getReportDate() : LocalDate.now();
-
+    /**
+     * 流式生成 AI 内容
+     */
+    private Flux<String> buildAiStream(SmartReportRequestDTO req, SmartReportResultVO.TriggeredRulesVO triggered) {
         String systemPrompt = """
                 你是一位专业的亚马逊电商运营顾问，正在为卖家生成每日店铺健康诊断报告。
 
@@ -186,6 +210,9 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 - 禁止：不要出现「AI」「系统检测」「根据数据显示」等机械表达
                 - 禁止：不要编造数据中没有的内容
                 """;
+
+        String revenueChangeStr = formatRevenueChange(req);
+        String profitChangeStr = formatProfitChange(req);
 
         String userPrompt = String.format("""
                 ## 今日数据汇总
@@ -211,16 +238,22 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 safeInt(req.getNoOrderLinks()),
                 req.getProfitRate() != null ? req.getProfitRate().doubleValue() : 0,
                 profitChangeStr,
-                redAlerts,
-                yellowAlerts,
-                greenAlerts);
+                triggered.getRedAlerts().isEmpty() ? "无" : String.join("、", triggered.getRedAlerts()),
+                triggered.getYellowAlerts().isEmpty() ? "无" : String.join("、", triggered.getYellowAlerts()),
+                triggered.getGreenAlerts().isEmpty() ? "无" : String.join("、", triggered.getGreenAlerts()));
 
-        try {
-            return aiAnalysisService.callAiAnalysis(systemPrompt, userPrompt);
-        } catch (Exception e) {
-            log.warn("AI 调用失败，降级使用结构化模板", e);
-            return buildFallbackContent(req, triggered, revenueChangeStr, profitChangeStr);
-        }
+        return aiAnalysisService.streamAiAnalysis(systemPrompt, userPrompt);
+    }
+
+    private String formatRevenueChange(SmartReportRequestDTO req) {
+        BigDecimal revenueChange = calculateRevenueChange(req.getWeeklyRevenue(), req.getLastWeekRevenue());
+        String changeSymbol = revenueChange.compareTo(BigDecimal.ZERO) >= 0 ? "↑" : "↓";
+        return changeSymbol + revenueChange.abs() + "%";
+    }
+
+    private String formatProfitChange(SmartReportRequestDTO req) {
+        String profitChangeSymbol = req.getProfitRateChange().compareTo(BigDecimal.ZERO) >= 0 ? "↑" : "↓";
+        return profitChangeSymbol + req.getProfitRateChange().abs() + "pt";
     }
 
     /**
@@ -290,5 +323,34 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
 
     private int safeInt(Integer value) {
         return value != null ? value : 0;
+    }
+
+    /**
+     * 序列化规则为前端可解析的字符串
+     */
+    private String serializeRules(SmartReportResultVO.TriggeredRulesVO triggered) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("red:").append(String.join(",", triggered.getRedAlerts())).append(";");
+        sb.append("yellow:").append(String.join(",", triggered.getYellowAlerts())).append(";");
+        sb.append("green:").append(String.join(",", triggered.getGreenAlerts())).append(";");
+        return sb.toString();
+    }
+
+    /**
+     * 序列化指标为前端可解析的字符串
+     */
+    private String serializeMetrics(SmartReportResultVO.MetricsVO m) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("todayRevenue:").append(m.getTodayRevenue()).append(";");
+        sb.append("todayOrders:").append(m.getTodayOrders()).append(";");
+        sb.append("weeklyRevenue:").append(m.getWeeklyRevenue()).append(";");
+        sb.append("lastWeekRevenue:").append(m.getLastWeekRevenue()).append(";");
+        sb.append("risingLinks:").append(m.getRisingLinks()).append(";");
+        sb.append("fallingLinks:").append(m.getFallingLinks()).append(";");
+        sb.append("noOrderLinks:").append(m.getNoOrderLinks()).append(";");
+        sb.append("profitRate:").append(m.getProfitRate()).append(";");
+        sb.append("profitRateChange:").append(m.getProfitRateChange()).append(";");
+        sb.append("revenueChangeRate:").append(m.getRevenueChangeRate()).append(";");
+        return sb.toString();
     }
 }

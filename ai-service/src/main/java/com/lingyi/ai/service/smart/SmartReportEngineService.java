@@ -2,6 +2,7 @@ package com.lingyi.ai.service.smart;
 
 import com.lingyi.ai.model.dto.SmartReportRequestDTO;
 import com.lingyi.ai.model.vo.SmartReportResultVO;
+import reactor.core.publisher.Flux;
 
 /**
  * 智能报告引擎服务
@@ -17,4 +18,12 @@ public interface SmartReportEngineService {
      * @return 包含触发规则、诊断摘要和 AI 建议的报告结果
      */
     SmartReportResultVO analyze(SmartReportRequestDTO request);
+
+    /**
+     * 流式分析智能报告（规则引擎同步 + AI 内容流式）
+     *
+     * @param request 包含销售指标和规则阈值的请求
+     * @return AI 内容文本流
+     */
+    Flux<String> streamAnalyze(SmartReportRequestDTO request);
 }

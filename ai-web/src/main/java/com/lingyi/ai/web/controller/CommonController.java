@@ -3,11 +3,14 @@ package com.lingyi.ai.web.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lingyi.ai.model.dto.DailyReportQueryDTO;
 import com.lingyi.ai.model.dto.EcommerceDataDTO;
+import com.lingyi.ai.model.dto.SmartReportRequestDTO;
 import com.lingyi.ai.model.vo.DailyReportDetailVO;
 import com.lingyi.ai.model.vo.DailyReportListVO;
 import com.lingyi.ai.model.vo.DailyReportPushVO;
+import com.lingyi.ai.model.vo.SmartReportResultVO;
 import com.lingyi.ai.service.DailyReportService;
 import com.lingyi.ai.service.ai.AiAnalysisService;
+import com.lingyi.ai.service.smart.SmartReportEngineService;
 import com.lingyi.ai.web.scheduler.DailyReportScheduler;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +38,9 @@ public class CommonController {
 
     @Resource
     private DailyReportService dailyReportService;
+
+    @Resource
+    private SmartReportEngineService smartReportEngineService;
 
     /**
      * 批量生成测试数据（近 N 天）
@@ -118,6 +124,24 @@ public class CommonController {
         log.info("查询日报详情，id：{}", id);
         DailyReportDetailVO detail = dailyReportService.getReportDetail(id);
         return Result.success(detail);
+    }
+
+    /**
+     * 智能报告分析（规则引擎 + AI 运营建议）
+     *
+     * @param request 包含销售指标和规则阈值的请求
+     * @return 触发规则、诊断摘要和 AI 建议
+     */
+    @PostMapping("/smart-report/analyze")
+    public Result<SmartReportResultVO> analyzeSmartReport(@RequestBody @Validated SmartReportRequestDTO request) {
+        log.info("收到智能报告分析请求，日期：{}", request.getReportDate());
+        try {
+            SmartReportResultVO result = smartReportEngineService.analyze(request);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("智能报告分析失败", e);
+            return Result.error("智能报告分析失败：" + e.getMessage());
+        }
     }
 
     /**

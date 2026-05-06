@@ -1,5 +1,6 @@
 package com.lingyi.ai.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import jakarta.validation.constraints.Min;
@@ -22,6 +23,7 @@ public class SmartReportRequestDTO {
     /**
      * 报告日期（可选，默认今天）
      */
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate reportDate;
 
     /**

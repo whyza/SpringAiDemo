@@ -19,7 +19,7 @@ public class SmartReportResultVO {
     private TriggeredRulesVO triggeredRules;
 
     /**
-     * 诊断结论摘要（如 "🔴 需立即关注：销售额大幅下滑预警"）
+     * 诊断结论摘要
      */
     private String alertSummary;
 
@@ -83,30 +83,5 @@ public class SmartReportResultVO {
          * 未出单链接数
          */
         private Integer noOrderLinks;
-
-        /**
-         * 整体利润率（%）
-         */
-        private BigDecimal profitRate;
-
-        /**
-         * 利润率环比变化（pt）
-         */
-        private BigDecimal profitRateChange;
-
-        /**
-         * 近 7 日销售额
-         */
-        private BigDecimal weeklyRevenue;
-
-        /**
-         * 上周同期销售额
-         */
-        private BigDecimal lastWeekRevenue;
-
-        /**
-         * 销售额环比变化（%）
-         */
-        private BigDecimal revenueChangeRate;
     }
 }

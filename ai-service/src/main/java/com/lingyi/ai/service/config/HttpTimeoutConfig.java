@@ -1,14 +1,10 @@
 package com.lingyi.ai.service.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
 
@@ -18,9 +14,6 @@ import java.time.Duration;
 @Configuration
 public class HttpTimeoutConfig {
 
-    @Value("${spring.ai.dashscope.chat.options.model:qwen3.6-max-preview}")
-    private String model;
-
     @Bean
     @Primary
     public RestClient.Builder restClientBuilder() {
@@ -29,16 +22,6 @@ public class HttpTimeoutConfig {
                         java.net.http.HttpClient.newBuilder()
                                 .connectTimeout(Duration.ofSeconds(300))
                                 .build()
-                ));
-    }
-
-    @Bean
-    @Primary
-    public WebClient.Builder webClientBuilder() {
-        return WebClient.builder()
-                .clientConnector(new ReactorClientHttpConnector(
-                        HttpClient.create()
-                                .responseTimeout(Duration.ofMinutes(5))
                 ));
     }
 }

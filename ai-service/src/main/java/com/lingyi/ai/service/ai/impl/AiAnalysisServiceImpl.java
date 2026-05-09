@@ -9,10 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -92,9 +90,6 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
     private ChatModel chatModel;
 
     @Resource
-    private StreamingChatModel streamingChatModel;
-
-    @Resource
     private DailyReportService dailyReportService;
 
 
@@ -122,18 +117,6 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
             log.error("日报生成失败", e);
             throw new RuntimeException("日报生成失败：" + e.getMessage(), e);
         }
-    }
-
-    @Override
-    public Flux<String> streamAiAnalysis(String systemPrompt, String userPrompt) {
-        log.info("流式调用 AI 分析，system 长度：{}, user 长度：{}", systemPrompt.length(), userPrompt.length());
-        Prompt prompt = new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userPrompt)));
-        return streamingChatModel.stream(prompt).map(chatResponse -> {
-            String content = chatResponse.getResult() != null
-                    ? chatResponse.getResult().getOutput().getContent()
-                    : null;
-            return content != null ? content : "";
-        }).filter(s -> !s.isEmpty());
     }
 
     /**

@@ -33,12 +33,6 @@
             <artifactId>spring-ai-alibaba-starter</artifactId>
         </dependency>
 
-        <!-- Reactor Netty (WebClient streaming support) -->
-        <dependency>
-            <groupId>io.projectreactor.netty</groupId>
-            <artifactId>reactor-netty-http</artifactId>
-        </dependency>
-
         <!-- Spring Boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

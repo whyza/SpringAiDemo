@@ -18,7 +18,7 @@ import java.time.LocalDate;
 public class SmartReportRequestDTO {
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate reportDate;
+    private LocalDate reportDate = LocalDate.now();
 
     @NotNull(message = "当天销售额不能为空")
     @DecimalMin(value = "0", message = "当天销售额不能为负数")

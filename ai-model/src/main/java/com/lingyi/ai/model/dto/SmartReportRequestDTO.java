@@ -1,10 +1,10 @@
 package com.lingyi.ai.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
-
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -15,10 +15,6 @@ import java.time.LocalDate;
  */
 @Data
 public class SmartReportRequestDTO {
-
-    // ═══════════════════════════════════════════
-    // 核心指标 (7 项)
-    // ═══════════════════════════════════════════
 
     /**
      * 报告日期（可选，默认今天）
@@ -34,11 +30,24 @@ public class SmartReportRequestDTO {
     private BigDecimal todayRevenue;
 
     /**
+     * 当天销售额环比变化（%）
+     */
+    @NotNull(message = "当天销售额环比变化不能为空")
+    private BigDecimal todayRevenueChange;
+
+    /**
      * 当天订单量
      */
     @NotNull(message = "当天订单量不能为空")
     @Min(value = 0, message = "订单量不能为负数")
     private Integer todayOrders;
+
+    /**
+     * 总链接数
+     */
+    @NotNull(message = "总链接数不能为空")
+    @Min(value = 0, message = "总链接数不能为负数")
+    private Integer totalLinks;
 
     /**
      * 销量上涨链接数
@@ -62,32 +71,16 @@ public class SmartReportRequestDTO {
     private Integer noOrderLinks;
 
     /**
-     * 整体利润率（%），计算公式：(销售额 - 成本 - 广告费 - FBA费) / 销售额
+     * 整体利润率（%）
      */
     @NotNull(message = "整体利润率不能为空")
     private BigDecimal profitRate;
 
     /**
-     * 利润率环比变化（pt），正数表示提升，负数表示下降
+     * 利润率环比变化（pt）
      */
     @NotNull(message = "利润率环比变化不能为空")
     private BigDecimal profitRateChange;
-
-    /**
-     * 近 7 日销售额（USD）
-     */
-    @NotNull(message = "近 7 日销售额不能为空")
-    private BigDecimal weeklyRevenue;
-
-    /**
-     * 上周同期销售额（USD），用于环比计算
-     */
-    @NotNull(message = "上周同期销售额不能为空")
-    private BigDecimal lastWeekRevenue;
-
-    // ═══════════════════════════════════════════
-    // 规则阈值配置（带默认值，前端可配置）
-    // ═══════════════════════════════════════════
 
     /**
      * R1: 销售额暴跌阈值（%），默认 20
@@ -125,7 +118,7 @@ public class SmartReportRequestDTO {
     private BigDecimal g1Threshold;
 
     /**
-     * G2: 爆款涌现上涨占比（%），默认 40
+     * G2: 上涨链接占比阈值（%），默认 40
      */
     private BigDecimal g2Threshold;
 
@@ -135,17 +128,35 @@ public class SmartReportRequestDTO {
     private BigDecimal g3Threshold;
 
     /**
-     * 应用默认阈值（当用户未配置时使用）
+     * 应用默认阈值
      */
     public void applyDefaults() {
-        if (r1Threshold == null) r1Threshold = BigDecimal.valueOf(20);
-        if (r2Threshold == null) r2Threshold = BigDecimal.valueOf(30);
-        if (r3ProfitMin == null) r3ProfitMin = BigDecimal.valueOf(5);
-        if (r3ProfitDrop == null) r3ProfitDrop = BigDecimal.valueOf(5);
-        if (y1Threshold == null) y1Threshold = BigDecimal.valueOf(10);
-        if (y2Ratio == null) y2Ratio = BigDecimal.valueOf(2);
-        if (g1Threshold == null) g1Threshold = BigDecimal.valueOf(10);
-        if (g2Threshold == null) g2Threshold = BigDecimal.valueOf(40);
-        if (g3Threshold == null) g3Threshold = BigDecimal.valueOf(15);
+        if (r1Threshold == null) {
+            r1Threshold = BigDecimal.valueOf(20);
+        }
+        if (r2Threshold == null) {
+            r2Threshold = BigDecimal.valueOf(30);
+        }
+        if (r3ProfitMin == null) {
+            r3ProfitMin = BigDecimal.valueOf(5);
+        }
+        if (r3ProfitDrop == null) {
+            r3ProfitDrop = BigDecimal.valueOf(5);
+        }
+        if (y1Threshold == null) {
+            y1Threshold = BigDecimal.valueOf(10);
+        }
+        if (y2Ratio == null) {
+            y2Ratio = BigDecimal.valueOf(2);
+        }
+        if (g1Threshold == null) {
+            g1Threshold = BigDecimal.valueOf(10);
+        }
+        if (g2Threshold == null) {
+            g2Threshold = BigDecimal.valueOf(40);
+        }
+        if (g3Threshold == null) {
+            g3Threshold = BigDecimal.valueOf(15);
+        }
     }
 }

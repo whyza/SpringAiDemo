@@ -43,7 +43,12 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         SmartReportResultVO result = new SmartReportResultVO();
         result.setDiagnosisConclusionText(diagnosisConclusionText);
         result.setOperationDiagnosisText(operationDiagnosisText);
-        result.setDiagnosisConclusions(structuredDiagnosis.getDiagnosisConclusions());
+
+        SmartReportResultVO.DiagnosisConclusionVO diagnosisConclusion = new SmartReportResultVO.DiagnosisConclusionVO();
+        diagnosisConclusion.setRedAlerts(structuredDiagnosis.getRedAlerts());
+        diagnosisConclusion.setYellowAlerts(structuredDiagnosis.getYellowAlerts());
+        diagnosisConclusion.setGreenHighlights(structuredDiagnosis.getGreenHighlights());
+        result.setDiagnosisConclusions(diagnosisConclusion);
 
         SmartReportResultVO.OperationDiagnosisVO operationDiagnosis = new SmartReportResultVO.OperationDiagnosisVO();
         operationDiagnosis.setCoreConclusions(structuredDiagnosis.getCoreConclusions());
@@ -102,14 +107,14 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 
                 ### 业务本质
                 2-3 条，基于数据解读：
-                - 销量和销售额的涨跌情况
-                - 客单价变化情况
-                - 量价关系（只描述数据，不推测原因）
+                销量和销售额的涨跌情况
+                客单价变化情况
+                量价关系（只描述数据，不推测原因）
                 
                 ### 多维度评估（基于输入数据）
-                - 增长质量：销量增速 vs 销售额增速的差距
-                - 商品结构：上涨和下跌商品的数量和比例
-                - SKU 健康度：未出单 SKU 的数量和占比
+                增长质量：销量增速 vs 销售额增速的差距
+                商品结构：上涨和下跌商品的数量和比例
+                SKU 健康度：未出单 SKU 的数量和占比
                 
                 ### 亮点（有就写，2-4 条）
                 ✅ [简短标题]：引用输入中的具体数字
@@ -336,7 +341,9 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
     private StructuredDiagnosis parseStructuredDiagnosis(String operationDiagnosisText,
                                                          String diagnosisConclusionText) {
         StructuredDiagnosis result = new StructuredDiagnosis();
-        result.setDiagnosisConclusions(extractDiagnosisConclusionLines(diagnosisConclusionText));
+        result.setRedAlerts(extractDiagnosisConclusionLines(diagnosisConclusionText, "🔴"));
+        result.setYellowAlerts(extractDiagnosisConclusionLines(diagnosisConclusionText, "🟡"));
+        result.setGreenHighlights(extractDiagnosisConclusionLines(diagnosisConclusionText, "🟢"));
         result.setCoreConclusions(extractSectionLines(operationDiagnosisText, "### 核心结论", "### 业务本质"));
         result.setBusinessEssence(extractSectionLines(operationDiagnosisText, "### 业务本质", "### 多维度评估"));
         result.setMultiDimensionalEvaluations(extractSectionLines(
@@ -379,18 +386,17 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         return result;
     }
 
-    private List<String> extractDiagnosisConclusionLines(String diagnosisConclusion) {
+    private List<String> extractDiagnosisConclusionLines(String diagnosisConclusion, String tag) {
         if (diagnosisConclusion == null || diagnosisConclusion.trim().isEmpty()) {
             return Collections.emptyList();
         }
         List<String> result = new ArrayList<>();
-        String[] lines = diagnosisConclusion.split("\\r?\\n");
-        for (String line : lines) {
+        for (String line : diagnosisConclusion.split("\\r?\\n")) {
+            if (!line.startsWith(tag)) {
+                continue;
+            }
             String cleaned = line
-                    .replace("🔴", "")
-                    .replace("🟡", "")
-                    .replace("🟢", "")
-                    .replace("📋", "")
+                    .replace(tag, "")
                     .replace("**", "")
                     .replace("需立即关注：", "")
                     .replace("值得关注：", "")
@@ -399,8 +405,7 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
             if (cleaned.isEmpty()) {
                 continue;
             }
-            String[] items = cleaned.split("[，,]");
-            for (String item : items) {
+            for (String item : cleaned.split("[，,]")) {
                 String value = item.trim();
                 if (!value.isEmpty()) {
                     result.add(value);
@@ -540,7 +545,9 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
 
     @Data
     private static class StructuredDiagnosis {
-        private List<String> diagnosisConclusions;
+        private List<String> redAlerts;
+        private List<String> yellowAlerts;
+        private List<String> greenHighlights;
         private List<String> coreConclusions;
         private List<String> businessEssence;
         private List<String> multiDimensionalEvaluations;

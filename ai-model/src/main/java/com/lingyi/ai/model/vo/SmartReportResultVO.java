@@ -17,7 +17,7 @@ public class SmartReportResultVO {
      * 诊断结论
      */
     @JsonProperty("诊断结论")
-    private List<String> diagnosisConclusions;
+    private DiagnosisConclusionVO diagnosisConclusions;
 
     /**
      * 运营诊断
@@ -36,6 +36,19 @@ public class SmartReportResultVO {
      */
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String diagnosisConclusionText;
+
+    @Data
+    public static class DiagnosisConclusionVO {
+
+        @JsonProperty("立即关注")
+        private List<String> redAlerts;
+
+        @JsonProperty("值得注意")
+        private List<String> yellowAlerts;
+
+        @JsonProperty("运营亮点")
+        private List<String> greenHighlights;
+    }
 
     @Data
     public static class OperationDiagnosisVO {

@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 智能报告中心 Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F5F4F0; --surface: #FFFFFF; --surface2: #F0EFE9;
+  --border: #E2E0D8; --border2: #D0CEC4;
+  --text: #1A1916; --text2: #6B6860; --text3: #A09E98;
+  --blue: #1A4FBF; --blue-light: #EBF0FC; --blue-mid: #B8C8F4;
+  --red: #BF2D1A; --red-light: #FCECEA; --red-mid: #F4B8B0;
+  --amber: #9E6010; --amber-light: #FCF5E8; --amber-mid: #F4D8A0;
+  --green: #1A6E3A; --green-light: #E8F6EE; --green-mid: #A8DFC0;
+  --radius: 10px; --radius-sm: 6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; font-size: 14px; line-height: 1.6;
+}
+
+.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+.sidebar {
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+}
+.sidebar-logo {
+  padding: 24px 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 12px;
+}
+.logo-mark {
+  width: 32px; height: 32px; background: var(--text);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+}
+.logo-mark svg { width: 16px; height: 16px; }
+.logo-name { font-size: 13px; font-weight: 600; }
+.logo-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+.nav-section { padding: 0 12px; margin-bottom: 4px; }
+.nav-label {
+  font-size: 10px; font-weight: 500; color: var(--text3);
+  letter-spacing: 0.08em; text-transform: uppercase; padding: 8px 8px 4px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; border-radius: var(--radius-sm);
+  font-size: 13px; color: var(--text2);
+}
+.nav-item.active { background: var(--text); color: white; }
+
+.sidebar-bottom {
+  margin-top: auto; padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text3);
+}
+
+.main { overflow-y: auto; }
+
+.topbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 14px 32px; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 10;
+}
+.breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text2);
+}
+.breadcrumb .sep { color: var(--border2); }
+.breadcrumb .cur { color: var(--text); font-weight: 500; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.topbar-badge {
+  font-size: 12px; padding: 4px 10px;
+  background: var(--green-light); color: var(--green);
+  border-radius: 20px; font-weight: 500;
+}
+
+.content { padding: 28px 32px; max-width: 1000px; }
+.page-title { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.page-desc { font-size: 13px; color: var(--text2); margin-top: 4px; margin-bottom: 20px; }
+
+.tab-bar {
+  display: flex; gap: 0; margin-bottom: 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); overflow: hidden;
+}
+.tab-btn {
+  flex: 1; text-align: center; padding: 10px 0;
+  font-size: 13px; font-weight: 500; color: var(--text2);
+  background: var(--surface2); cursor: pointer;
+  border: none; font-family: inherit; transition: all 0.12s;
+  border-right: 1px solid var(--border);
+}
+.tab-btn:last-child { border-right: none; }
+.tab-btn:hover { background: var(--border); color: var(--text); }
+.tab-btn.active { background: var(--text); color: white; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.api-bar {
+  display: flex; gap: 8px; margin-bottom: 20px; align-items: center;
+}
+.api-bar label { font-size: 12px; font-weight: 500; color: var(--text2); white-space: nowrap; }
+.api-bar input {
+  flex: 1; height: 34px; padding: 0 10px;
+  border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  font-size: 13px; font-family: 'DM Mono', monospace;
+  color: var(--text); background: var(--surface);
+}
+
+.scenario-bar {
+  display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.scenario-btn {
+  font-size: 12px; font-weight: 500;
+  padding: 7px 16px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  background: var(--surface); color: var(--text2);
+  cursor: pointer; transition: all 0.12s; font-family: 'DM Sans', sans-serif;
+}
+.scenario-btn:hover { border-color: var(--text3); color: var(--text); }
+.scenario-btn.red { border-color: var(--red-mid); background: var(--red-light); color: var(--red); }
+.scenario-btn.amber { border-color: var(--amber-mid); background: var(--amber-light); color: var(--amber); }
+.scenario-btn.green { border-color: var(--green-mid); background: var(--green-light); color: var(--green); }
+
+.sec-label {
+  font-size: 10px; font-weight: 600; color: var(--text3);
+  letter-spacing: 0.1em; text-transform: uppercase; margin: 24px 0 10px;
+}
+
+.input-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px; margin-bottom: 12px;
+}
+.input-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;
+}
+.input-field label {
+  display: block; font-size: 12px; font-weight: 500;
+  color: var(--text2); margin-bottom: 4px;
+}
+.input-field input {
+  width: 100%; height: 34px; padding: 0 10px;
+  border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  font-size: 13px; font-family: 'DM Mono', monospace;
+  color: var(--text); background: var(--bg);
+}
+
+.rule-group { margin-bottom: 14px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+.rg-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 16px; font-size: 13px; font-weight: 600;
+}
+.rg-header.red { background: var(--red-light); color: var(--red); border-bottom: 1px solid var(--red-mid); }
+.rg-header.amber { background: var(--amber-light); color: var(--amber); border-bottom: 1px solid var(--amber-mid); }
+.rg-header.green { background: var(--green-light); color: var(--green); border-bottom: 1px solid var(--green-mid); }
+.rg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.rg-dot.red { background: var(--red); }
+.rg-dot.amber { background: var(--amber); }
+.rg-dot.green { background: var(--green); }
+.rg-badge { margin-left: auto; font-size: 11px; font-weight: 500; opacity: 0.7; font-family: 'DM Mono', monospace; }
+
+.rule-row {
+  display: grid; grid-template-columns: 140px 1fr auto; gap: 16px; align-items: center;
+  padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.rule-row:last-child { border-bottom: none; }
+.rule-row:nth-child(even) { background: var(--surface2); }
+.rr-id { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+.rr-name { font-size: 13px; font-weight: 500; }
+.rr-cond { font-size: 12px; color: var(--text2); line-height: 1.45; }
+.rr-note { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+.rr-ctrl { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.ctrl-row { display: flex; align-items: center; gap: 5px; }
+.ctrl-label { font-size: 11px; color: var(--text3); }
+.ctrl-input {
+  width: 56px; height: 30px; font-size: 13px; font-family: 'DM Mono', monospace;
+  text-align: center; font-weight: 500;
+  border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text); padding: 0 6px;
+}
+.ctrl-unit { font-size: 12px; color: var(--text2); min-width: 16px; }
+.ctrl-default { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+
+.action-bar {
+  display: flex; justify-content: flex-end; gap: 8px;
+  margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);
+}
+.btn {
+  font-size: 13px; font-weight: 600;
+  padding: 10px 28px; border-radius: var(--radius-sm);
+  border: none; cursor: pointer; transition: opacity 0.12s;
+}
+.btn-primary { background: var(--text); color: white; }
+.btn-primary:hover { opacity: 0.85; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secondary {
+  background: transparent; color: var(--text2);
+  border: 1px solid var(--border2); font-weight: 500;
+}
+
+.result-area { margin-top: 24px; display: none; }
+.result-area.show { display: block; }
+.result-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+}
+.result-title { font-size: 18px; font-weight: 600; }
+.result-time { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; }
+
+.ai-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  line-height: 1.8; white-space: pre-wrap; font-size: 13px;
+}
+.ai-label {
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px;
+}
+
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--text); color: white; font-size: 13px; font-weight: 500;
+  padding: 10px 18px; border-radius: var(--radius);
+  opacity: 0; transform: translateY(8px);
+  transition: all 0.2s; pointer-events: none; z-index: 999;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.error { background: var(--red); }
+
+@media (max-width: 640px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .content { padding: 20px 16px; }
+  .rule-row { grid-template-columns: 1fr; gap: 8px; }
+  .rr-ctrl { align-items: flex-start; }
+  .input-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 16 16" fill="none">
+          <rect x="1" y="1" width="6" height="6" rx="1.5" fill="white" opacity="0.9"/>
+          <rect x="9" y="1" width="6" height="6" rx="1.5" fill="white" opacity="0.6"/>
+          <rect x="1" y="9" width="6" height="6" rx="1.5" fill="white" opacity="0.6"/>
+          <rect x="9" y="9" width="6" height="6" rx="1.5" fill="white" opacity="0.3"/>
+        </svg>
+      </div>
+      <div class="logo-name">ERP 管理平台</div>
+      <div class="logo-sub">跨境电商运营系统</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">运营</div>
+      <div class="nav-item">数据看板</div>
+      <div class="nav-item">销售分析</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">AI 工具</div>
+      <div class="nav-item active">智能报告中心</div>
+    </div>
+    <div class="sidebar-bottom">Demo 模式，默认连接本地 API</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">
+        <span>AI 工具</span>
+        <span class="sep">/</span>
+        <span class="cur" id="breadCur">智能报告 Demo</span>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-badge">API Demo</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="page-title">智能报告中心</div>
+      <div class="page-desc">支持 smart-report 规则诊断和 daily-report 结果查看。</div>
+
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('smart')">智能报告</button>
+        <button class="tab-btn" onclick="switchTab('daily')">电商日报</button>
+      </div>
+
+      <div class="tab-content active" id="tabSmart">
+        <div class="api-bar">
+          <label>API 地址</label>
+          <input type="text" id="apiUrl" value="http://localhost:8080/api/smart-report/analyze" placeholder="http://localhost:8080/api/smart-report/analyze">
+        </div>
+
+        <div class="scenario-bar">
+          <span style="font-size:12px;font-weight:500;color:var(--text2);line-height:32px;">演示场景：</span>
+          <button class="scenario-btn green" onclick="loadScenario('green')">绿色场景</button>
+          <button class="scenario-btn amber" onclick="loadScenario('mixed')">混合场景</button>
+          <button class="scenario-btn red" onclick="loadScenario('red')">红色场景</button>
+        </div>
+
+        <div class="sec-label">基础数据输入</div>
+        <div class="input-card">
+          <div class="input-grid">
+            <div class="input-field">
+              <label>当天销售额（元）</label>
+              <input type="number" id="todayRevenue" value="8500" step="100">
+            </div>
+            <div class="input-field">
+              <label>昨日销售额（元）</label>
+              <input type="number" id="yesterdayRevenue" value="10000" step="100">
+            </div>
+            <div class="input-field">
+              <label>当天订单量</label>
+              <input type="number" id="todayOrders" value="52">
+            </div>
+            <div class="input-field">
+              <label>昨日订单量</label>
+              <input type="number" id="yesterdayOrders" value="60">
+            </div>
+            <div class="input-field">
+              <label>今日销量上涨链接数</label>
+              <input type="number" id="todayRisingLinks" value="85">
+            </div>
+            <div class="input-field">
+              <label>昨日销量上涨链接数</label>
+              <input type="number" id="yesterdayRisingLinks" value="80">
+            </div>
+            <div class="input-field">
+              <label>今日销量下跌链接数</label>
+              <input type="number" id="todayFallingLinks" value="40">
+            </div>
+            <div class="input-field">
+              <label>昨日销量下跌链接数</label>
+              <input type="number" id="yesterdayFallingLinks" value="35">
+            </div>
+            <div class="input-field">
+              <label>今日未出单链接数</label>
+              <input type="number" id="todayNoOrderLinks" value="25">
+            </div>
+            <div class="input-field">
+              <label>昨日未出单链接数</label>
+              <input type="number" id="yesterdayNoOrderLinks" value="22">
+            </div>
+          </div>
+        </div>
+
+        <div class="sec-label">诊断规则配置</div>
+        <div class="rule-group">
+          <div class="rg-header red">
+            <div class="rg-dot red"></div>
+            红色预警：立即关注
+            <span class="rg-badge">2 条</span>
+          </div>
+          <div class="rule-row">
+            <div><div class="rr-id">R1</div><div class="rr-name">销售额大幅下滑</div><div class="rr-note">最高优先级</div></div>
+            <div class="rr-cond">当天销售额相较昨日下降幅度达到阈值。</div>
+            <div class="rr-ctrl">
+              <div class="ctrl-row">
+                <span class="ctrl-label">阈值 ≥</span>
+                <input class="ctrl-input" type="number" id="r1Threshold" value="20" min="1" max="99">
+                <span class="ctrl-unit">%</span>
+              </div>
+              <span class="ctrl-default">默认 20%</span>
+            </div>
+          </div>
+          <div class="rule-row">
+            <div><div class="rr-id">R2</div><div class="rr-name">大量链接未出单</div><div class="rr-note">最高优先级</div></div>
+            <div class="rr-cond">今日未出单链接数占今日总链接数的比例达到阈值。</div>
+            <div class="rr-ctrl">
+              <div class="ctrl-row">
+                <span class="ctrl-label">占比 ≥</span>
+                <input class="ctrl-input" type="number" id="r2Threshold" value="30" min="1" max="99">
+                <span class="ctrl-unit">%</span>
+              </div>
+              <span class="ctrl-default">默认 30%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rule-group">
+          <div class="rg-header amber">
+            <div class="rg-dot amber"></div>
+            黄色提醒：值得注意
+            <span class="rg-badge">3 条</span>
+          </div>
+          <div class="rule-row">
+            <div><div class="rr-id">Y1</div><div class="rr-name">销售额下滑关注</div></div>
+            <div class="rr-cond">当天销售额下降幅度达到黄色阈值，但未达到红色预警阈值。</div>
+            <div class="rr-ctrl">
+              <div class="ctrl-row">
+                <span class="ctrl-label">阈值 ≥</span>
+                <input class="ctrl-input" type="number" id="y1Threshold" value="10" min="1" max="99">
+                <span class="ctrl-unit">%</span>
+              </div>
+              <span class="ctrl-default">默认 10%</span>
+            </div>
+          </div>
+          <div class="rule-row">
+            <div><div class="rr-id">Y2</div><div class="rr-name">下跌链接趋势明显</div></div>
+            <div class="rr-cond">今日下跌链接数大于今日上涨链接数乘以比例阈值。</div>
+            <div class="rr-ctrl">
+              <div class="ctrl-row">
+                <span class="ctrl-label">比例 ></span>
+                <input class="ctrl-input" type="number" id="y2Ratio" value="2" min="1" max="10">
+                <span class="ctrl-unit">倍</span>
+              </div>
+              <span class="ctrl-default">默认 2 倍</span>
+            </div>
+          </div>
+          <div class="rule-row">
+            <div><div class="rr-id">Y3</div><div class="rr-name">存在未出单链接</div></div>
+            <div class="rr-cond">今日存在未出单链接，但未达到红色未出单占比阈值。</div>
+            <div class="rr-ctrl">
+              <span class="ctrl-default">自动判断</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rule-group">
+          <div class="rg-header green">
+            <div class="rg-dot green"></div>
+            绿色亮点：运营表现
+            <span class="rg-badge">2 条</span>
+          </div>
+          <div class="rule-row">
+            <div><div class="rr-id">G1</div><div class="rr-name">销售额稳步增长</div></div>
+            <div class="rr-cond">当天销售额相较昨日增长达到阈值。</div>
+            <div class="rr-ctrl">
+              <div class="ctrl-row">
+                <span class="ctrl-label">阈值 ≥</span>
+                <input class="ctrl-input" type="number" id="g1Threshold" value="10" min="1" max="99">
+                <span class="ctrl-unit">%</span>
+              </div>
+              <span class="ctrl-default">默认 10%</span>
+            </div>
+          </div>
+          <div class="rule-row">
+            <div><div class="rr-id">G2</div><div class="rr-name">上涨链接占比亮眼</div></div>
+            <div class="rr-cond">今日上涨链接数占今日总链接数比例达到阈值。</div>
+            <div class="rr-ctrl">
+              <div class="ctrl-row">
+                <span class="ctrl-label">占比 ≥</span>
+                <input class="ctrl-input" type="number" id="g2Threshold" value="40" min="1" max="99">
+                <span class="ctrl-unit">%</span>
+              </div>
+              <span class="ctrl-default">默认 40%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-secondary" onclick="resetDefaults()">恢复默认</button>
+          <button class="btn btn-primary" id="analyzeBtn" onclick="analyze()">开始分析</button>
+        </div>
+
+        <div class="result-area" id="resultArea">
+          <div class="result-header">
+            <span class="result-title">分析结果</span>
+            <span class="result-time" id="resultTime"></span>
+          </div>
+          <div class="sec-label">诊断结论</div>
+          <div class="ai-box">
+            <div class="ai-label">规则引擎结论</div>
+            <div id="diagnosisConclusion"></div>
+          </div>
+          <div class="sec-label">运营诊断</div>
+          <div class="ai-box">
+            <div class="ai-label">AI 诊断正文</div>
+            <div id="operationDiagnosis"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tabDaily">
+        <div class="api-bar">
+          <label>API 地址</label>
+          <input type="text" id="dailyApiUrl" value="http://localhost:8080/api/daily-report/generate" placeholder="http://localhost:8080/api/daily-report/generate">
+        </div>
+
+        <div class="scenario-bar">
+          <span style="font-size:12px;font-weight:500;color:var(--text2);line-height:32px;">快捷场景：</span>
+          <button class="scenario-btn green" onclick="loadDailyScenario('good')">业绩向好</button>
+          <button class="scenario-btn amber" onclick="loadDailyScenario('flat')">数据平稳</button>
+          <button class="scenario-btn red" onclick="loadDailyScenario('bad')">需要关注</button>
+        </div>
+
+        <div class="sec-label">电商数据输入</div>
+        <div class="input-card">
+          <div class="input-grid">
+            <div class="input-field">
+              <label>今日销量（件）</label>
+              <input type="number" id="todaySales" value="12000">
+            </div>
+            <div class="input-field">
+              <label>昨日销量（件）</label>
+              <input type="number" id="yesterdaySales" value="11234">
+            </div>
+            <div class="input-field">
+              <label>今日销售额（元）</label>
+              <input type="number" id="todayRevenueDaily" value="987623" step="0.01">
+            </div>
+            <div class="input-field">
+              <label>昨日销售额（元）</label>
+              <input type="number" id="yesterdayRevenueDaily" value="965443" step="0.01">
+            </div>
+            <div class="input-field">
+              <label>销量上涨链接数</label>
+              <input type="number" id="risingLinksDaily" value="124">
+            </div>
+            <div class="input-field">
+              <label>销量下跌链接数</label>
+              <input type="number" id="fallingLinksDaily" value="45">
+            </div>
+            <div class="input-field">
+              <label>7天未出单链接数</label>
+              <input type="number" id="noOrderLinksDaily" value="129">
+            </div>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-primary" id="dailyBtn" onclick="generateDaily()">生成日报</button>
+        </div>
+
+        <div class="result-area" id="dailyResultArea">
+          <div class="result-header">
+            <span class="result-title">日报结果</span>
+            <span class="result-time" id="dailyStatus"></span>
+          </div>
+          <div class="ai-box">
+            <div class="ai-label">AI 分析报告</div>
+            <div id="dailyContent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const scenarios = {
+  green: {
+    todayRevenue: 9200, yesterdayRevenue: 7800,
+    todayOrders: 58, yesterdayOrders: 49,
+    todayRisingLinks: 95, yesterdayRisingLinks: 82,
+    todayFallingLinks: 30, yesterdayFallingLinks: 41,
+    todayNoOrderLinks: 8, yesterdayNoOrderLinks: 12
+  },
+  mixed: {
+    todayRevenue: 7800, yesterdayRevenue: 8860,
+    todayOrders: 45, yesterdayOrders: 48,
+    todayRisingLinks: 50, yesterdayRisingLinks: 57,
+    todayFallingLinks: 55, yesterdayFallingLinks: 49,
+    todayNoOrderLinks: 35, yesterdayNoOrderLinks: 31
+  },
+  red: {
+    todayRevenue: 5500, yesterdayRevenue: 8100,
+    todayOrders: 28, yesterdayOrders: 43,
+    todayRisingLinks: 20, yesterdayRisingLinks: 38,
+    todayFallingLinks: 90, yesterdayFallingLinks: 61,
+    todayNoOrderLinks: 75, yesterdayNoOrderLinks: 46
+  }
+};
+
+function loadScenario(key) {
+  const s = scenarios[key];
+  if (!s) return;
+  document.getElementById('todayRevenue').value = s.todayRevenue;
+  document.getElementById('yesterdayRevenue').value = s.yesterdayRevenue;
+  document.getElementById('todayOrders').value = s.todayOrders;
+  document.getElementById('yesterdayOrders').value = s.yesterdayOrders;
+  document.getElementById('todayRisingLinks').value = s.todayRisingLinks;
+  document.getElementById('yesterdayRisingLinks').value = s.yesterdayRisingLinks;
+  document.getElementById('todayFallingLinks').value = s.todayFallingLinks;
+  document.getElementById('yesterdayFallingLinks').value = s.yesterdayFallingLinks;
+  document.getElementById('todayNoOrderLinks').value = s.todayNoOrderLinks;
+  document.getElementById('yesterdayNoOrderLinks').value = s.yesterdayNoOrderLinks;
+  showToast('已加载 ' + { green: '绿色', mixed: '混合', red: '红色' }[key] + ' 场景数据');
+}
+
+function resetDefaults() {
+  document.getElementById('r1Threshold').value = 20;
+  document.getElementById('r2Threshold').value = 30;
+  document.getElementById('y1Threshold').value = 10;
+  document.getElementById('y2Ratio').value = 2;
+  document.getElementById('g1Threshold').value = 10;
+  document.getElementById('g2Threshold').value = 40;
+  showToast('已恢复默认规则阈值');
+}
+
+async function analyze() {
+  const btn = document.getElementById('analyzeBtn');
+  const resultArea = document.getElementById('resultArea');
+  const apiUrl = document.getElementById('apiUrl').value.trim();
+
+  if (!apiUrl) {
+    showToast('请先填写 API 地址', true);
+    return;
+  }
+
+  const body = {
+    todayRevenue: +document.getElementById('todayRevenue').value || 0,
+    yesterdayRevenue: +document.getElementById('yesterdayRevenue').value || 0,
+    todayOrders: +document.getElementById('todayOrders').value || 0,
+    yesterdayOrders: +document.getElementById('yesterdayOrders').value || 0,
+    todayRisingLinks: +document.getElementById('todayRisingLinks').value || 0,
+    yesterdayRisingLinks: +document.getElementById('yesterdayRisingLinks').value || 0,
+    todayFallingLinks: +document.getElementById('todayFallingLinks').value || 0,
+    yesterdayFallingLinks: +document.getElementById('yesterdayFallingLinks').value || 0,
+    todayNoOrderLinks: +document.getElementById('todayNoOrderLinks').value || 0,
+    yesterdayNoOrderLinks: +document.getElementById('yesterdayNoOrderLinks').value || 0,
+    r1Threshold: +document.getElementById('r1Threshold').value || 20,
+    r2Threshold: +document.getElementById('r2Threshold').value || 30,
+    y1Threshold: +document.getElementById('y1Threshold').value || 10,
+    y2Ratio: +document.getElementById('y2Ratio').value || 2,
+    g1Threshold: +document.getElementById('g1Threshold').value || 10,
+    g2Threshold: +document.getElementById('g2Threshold').value || 40
+  };
+
+  btn.disabled = true;
+  btn.textContent = '分析中...';
+  resultArea.classList.remove('show');
+  document.getElementById('diagnosisConclusion').textContent = '';
+  document.getElementById('operationDiagnosis').textContent = '';
+
+  try {
+    const resp = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    if (data.code === 200 && data.data) {
+      renderResult(data.data);
+    } else {
+      throw new Error(data.message || '请求失败');
+    }
+  } catch (e) {
+    showToast('请求失败，已切换本地降级：' + e.message, true);
+    renderLocalFallback(body);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '开始分析';
+  }
+}
+
+function renderResult(data) {
+  const now = new Date().toLocaleString('zh-CN');
+  document.getElementById('resultTime').textContent = now;
+  document.getElementById('diagnosisConclusion').textContent = formatDiagnosisConclusion(data['诊断结论']);
+  document.getElementById('operationDiagnosis').textContent = formatOperationDiagnosis(data['运营诊断']);
+  document.getElementById('resultArea').classList.add('show');
+  document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function formatDiagnosisConclusion(diagnosisConclusion) {
+  if (!diagnosisConclusion || typeof diagnosisConclusion !== 'object') {
+    return '诊断结论未返回';
+  }
+  const sections = [
+    ['立即关注', diagnosisConclusion['立即关注']],
+    ['值得注意', diagnosisConclusion['值得注意']],
+    ['运营亮点', diagnosisConclusion['运营亮点']]
+  ];
+  return sections
+    .filter(([, items]) => Array.isArray(items) && items.length)
+    .map(([title, items]) => `${title}\n${items.join('\n')}`)
+    .join('\n\n') || '诊断结论未返回';
+}
+
+function formatOperationDiagnosis(operationDiagnosis) {
+  if (!operationDiagnosis || typeof operationDiagnosis !== 'object') {
+    return '运营诊断未返回';
+  }
+  const sections = [
+    ['核心结论', operationDiagnosis['核心结论']],
+    ['业务本质', operationDiagnosis['业务本质']],
+    ['多维度评估', operationDiagnosis['多维度评估']],
+    ['亮点', operationDiagnosis['亮点']],
+    ['风险预警', operationDiagnosis['风险预警']],
+    ['运营建议', operationDiagnosis['运营建议']]
+  ];
+  return sections
+    .filter(([, items]) => Array.isArray(items) && items.length)
+    .map(([title, items]) => `${title}\n${items.join('\n')}`)
+    .join('\n\n') || '运营诊断未返回';
+}
+
+function formatPercentTrend(num) {
+  return (num >= 0 ? '↑' : '↓') + Math.abs(num).toFixed(2) + '%';
+}
+
+function renderLocalFallback(body) {
+  const totalLinks = (body.todayRisingLinks || 0) + (body.todayFallingLinks || 0) + (body.todayNoOrderLinks || 0);
+  const yesterdayTotalLinks = (body.yesterdayRisingLinks || 0) + (body.yesterdayFallingLinks || 0) + (body.yesterdayNoOrderLinks || 0);
+  const revenueChange = body.yesterdayRevenue > 0
+    ? ((body.todayRevenue - body.yesterdayRevenue) / body.yesterdayRevenue * 100)
+    : (body.todayRevenue > 0 ? 100 : 0);
+
+  const triggered = { redAlerts: [], yellowAlerts: [], greenAlerts: [] };
+
+  if (revenueChange < 0 && Math.abs(revenueChange) >= body.r1Threshold) {
+    triggered.redAlerts.push('销售额大幅下滑预警');
+  }
+  if (totalLinks > 0 && body.todayNoOrderLinks / totalLinks * 100 >= body.r2Threshold) {
+    triggered.redAlerts.push('大量链接未出单预警');
+  }
+  if (revenueChange < 0 && Math.abs(revenueChange) >= body.y1Threshold && Math.abs(revenueChange) < body.r1Threshold) {
+    triggered.yellowAlerts.push('销售额下滑值得关注');
+  }
+  if (body.todayFallingLinks > body.todayRisingLinks * body.y2Ratio) {
+    triggered.yellowAlerts.push('下跌链接明显多于上涨链接');
+  }
+  if (body.todayNoOrderLinks >= 1 && totalLinks > 0 && body.todayNoOrderLinks / totalLinks * 100 < body.r2Threshold) {
+    triggered.yellowAlerts.push('存在未出单链接');
+  }
+  if (revenueChange >= body.g1Threshold) {
+    triggered.greenAlerts.push('销售额稳步增长');
+  }
+  if (totalLinks > 0 && body.todayRisingLinks / totalLinks * 100 >= body.g2Threshold) {
+    triggered.greenAlerts.push('上涨链接占比表现亮眼');
+  }
+
+  const fallbackData = {
+    '诊断结论': {
+      '立即关注': triggered.redAlerts,
+      '值得注意': triggered.yellowAlerts,
+      '运营亮点': triggered.greenAlerts.length ? triggered.greenAlerts : (!triggered.redAlerts.length && !triggered.yellowAlerts.length ? ['无明显异常'] : [])
+    },
+    '运营诊断': {
+      '核心结论': [
+        `当天销售额 ${body.todayRevenue} 元，昨日销售额 ${body.yesterdayRevenue} 元，销售额变化 ${formatPercentTrend(revenueChange)}。`,
+        `当天订单量 ${body.todayOrders} 单，昨日订单量 ${body.yesterdayOrders} 单。`,
+        `今日总链接数 ${totalLinks}，昨日总链接数 ${yesterdayTotalLinks}。`
+      ],
+      '业务本质': [
+        '当前经营表现主要由销售额、订单量和链接结构共同驱动。',
+        `今日上涨链接 ${body.todayRisingLinks}，今日下跌链接 ${body.todayFallingLinks}，说明链接表现存在分化。`,
+        `今日未出单链接 ${body.todayNoOrderLinks}，直接反映低效链接压力。`
+      ],
+      '多维度评估': [
+        `销售维度：销售额变化 ${formatPercentTrend(revenueChange)}。`,
+        `订单维度：当天订单量 ${body.todayOrders} 单，昨日订单量 ${body.yesterdayOrders} 单。`,
+        `链接维度：今日上涨 ${body.todayRisingLinks}，今日下跌 ${body.todayFallingLinks}，今日未出单 ${body.todayNoOrderLinks}。`,
+        `对比维度：昨日上涨 ${body.yesterdayRisingLinks}，昨日下跌 ${body.yesterdayFallingLinks}，昨日未出单 ${body.yesterdayNoOrderLinks}。`
+      ],
+      '亮点': triggered.greenAlerts.length ? triggered.greenAlerts : ['当前未触发明显运营亮点规则。'],
+      '风险预警': triggered.redAlerts.concat(triggered.yellowAlerts).length
+        ? triggered.redAlerts.concat(triggered.yellowAlerts)
+        : ['当前未触发明显风险预警规则。'],
+      '运营建议': [
+        '优先处理销售额下滑与未出单链接占比较高的问题。',
+        '重点跟进下跌链接和未出单链接，及时调整 listing、价格和投放策略。',
+        '对已表现较好的上涨链接，继续承接流量，避免结构继续失衡。'
+      ]
+    }
+  };
+
+  renderResult(fallbackData);
+}
+
+const dailyScenarios = {
+  good: {
+    todaySales: 15000, yesterdaySales: 12000,
+    todayRevenue: 1200000, yesterdayRevenue: 980000,
+    risingLinks: 150, fallingLinks: 30, noOrderLinks: 20
+  },
+  flat: {
+    todaySales: 10000, yesterdaySales: 10200,
+    todayRevenue: 850000, yesterdayRevenue: 860000,
+    risingLinks: 60, fallingLinks: 55, noOrderLinks: 40
+  },
+  bad: {
+    todaySales: 5000, yesterdaySales: 12000,
+    todayRevenue: 400000, yesterdayRevenue: 980000,
+    risingLinks: 15, fallingLinks: 120, noOrderLinks: 150
+  }
+};
+
+function loadDailyScenario(key) {
+  const s = dailyScenarios[key];
+  if (!s) return;
+  document.getElementById('todaySales').value = s.todaySales;
+  document.getElementById('yesterdaySales').value = s.yesterdaySales;
+  document.getElementById('todayRevenueDaily').value = s.todayRevenue;
+  document.getElementById('yesterdayRevenueDaily').value = s.yesterdayRevenue;
+  document.getElementById('risingLinksDaily').value = s.risingLinks;
+  document.getElementById('fallingLinksDaily').value = s.fallingLinks;
+  document.getElementById('noOrderLinksDaily').value = s.noOrderLinks;
+  showToast('已加载 ' + { good: '业绩向好', flat: '数据平稳', bad: '需要关注' }[key] + ' 场景');
+}
+
+async function generateDaily() {
+  const btn = document.getElementById('dailyBtn');
+  const resultArea = document.getElementById('dailyResultArea');
+  const apiUrl = document.getElementById('dailyApiUrl').value.trim();
+
+  if (!apiUrl) {
+    showToast('请先填写 API 地址', true);
+    return;
+  }
+
+  const body = {
+    todaySales: +document.getElementById('todaySales').value || 0,
+    yesterdaySales: +document.getElementById('yesterdaySales').value || 0,
+    todayRevenue: +document.getElementById('todayRevenueDaily').value || 0,
+    yesterdayRevenue: +document.getElementById('yesterdayRevenueDaily').value || 0,
+    risingLinks: +document.getElementById('risingLinksDaily').value || 0,
+    fallingLinks: +document.getElementById('fallingLinksDaily').value || 0,
+    noOrderLinks: +document.getElementById('noOrderLinksDaily').value || 0
+  };
+
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+  resultArea.classList.remove('show');
+  document.getElementById('dailyContent').textContent = '';
+
+  try {
+    const resp = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    if (data.code === 200 && data.data) {
+      renderDailyResult(data.data);
+    } else {
+      throw new Error(data.message || '请求失败');
+    }
+  } catch (e) {
+    showToast('请求失败：' + e.message, true);
+    document.getElementById('dailyContent').innerHTML =
+      `<span style="color:var(--red)">请求失败：${escapeHtml(e.message)}<br>请检查服务是否已启动</span>`;
+    resultArea.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '生成日报';
+  }
+}
+
+function renderDailyResult(data) {
+  const now = new Date().toLocaleString('zh-CN');
+  document.getElementById('dailyStatus').textContent = now;
+
+  let html = '';
+  if (data.fullReport) {
+    html = escapeHtml(data.fullReport);
+  } else if (data.summary) {
+    html = escapeHtml(data.summary);
+  } else {
+    html = '报告内容为空';
+  }
+  document.getElementById('dailyContent').innerHTML = html;
+
+  document.getElementById('dailyResultArea').classList.add('show');
+  document.getElementById('dailyResultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>');
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (tab === 'smart' && i === 0) || (tab === 'daily' && i === 1));
+  });
+  document.getElementById('tabSmart').classList.toggle('active', tab === 'smart');
+  document.getElementById('tabDaily').classList.toggle('active', tab === 'daily');
+  document.getElementById('breadCur').textContent = tab === 'smart' ? '智能报告 Demo' : '电商日报 Demo';
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => {
+    t.className = 'toast';
+  }, 2800);
+}
+</script>
+</body>
+</html>

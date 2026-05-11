@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能报告分析接口文档</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 32px 0;
+            background: #f6f8fa;
+            display: flex;
+            justify-content: center;
+        }
+        .markdown-body {
+            max-width: 960px;
+            width: 100%;
+            padding: 40px 48px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+        @media (max-width: 768px) {
+            body { padding: 16px; }
+            .markdown-body { padding: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body" id="content"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+    <script>
+        const markdownContent = `# 智能报告分析接口
+
+\`POST /api/smart-report/analyze\`
+
+基于销售指标和规则阈值，触发规则引擎 + AI 运营诊断，返回诊断结论和运营建议。
+
+---
+
+## 请求信息
+
+| 项目 | 内容 |
+|------|------|
+| **请求 URL** | \`POST /api/smart-report/analyze\` |
+| **Content-Type** | \`application/json\` |
+| **接口路径** | \`CommonController#analyzeSmartReport\` |
+
+---
+
+## 请求参数
+
+### SmartReportRequestDTO
+
+| 字段 | 类型 | 必填 | 默认值 | 描述 |
+|------|------|------|--------|------|
+| \`reportDate\` | \`LocalDate\` | 否 | 当天 | 报告日期，格式 \`yyyy-MM-dd\` |
+| \`todayRevenue\` | \`BigDecimal\` | 是 | — | 当天销售额（元），≥ 0 |
+| \`yesterdayRevenue\` | \`BigDecimal\` | 是 | — | 昨日销售额（元），≥ 0 |
+| \`todayOrders\` | \`Integer\` | 是 | — | 当天订单量，≥ 0 |
+| \`yesterdayOrders\` | \`Integer\` | 是 | — | 昨日订单量，≥ 0 |
+| \`todayRisingLinks\` | \`Integer\` | 是 | — | 今日销量上涨链接数，≥ 0 |
+| \`yesterdayRisingLinks\` | \`Integer\` | 是 | — | 昨日销量上涨链接数，≥ 0 |
+| \`todayFallingLinks\` | \`Integer\` | 是 | — | 今日销量下跌链接数，≥ 0 |
+| \`yesterdayFallingLinks\` | \`Integer\` | 是 | — | 昨日销量下跌链接数，≥ 0 |
+| \`todayNoOrderLinks\` | \`Integer\` | 是 | — | 今日未出单链接数，≥ 0 |
+| \`yesterdayNoOrderLinks\` | \`Integer\` | 是 | — | 昨日未出单链接数，≥ 0 |
+
+### 规则阈值参数（可选）
+
+| 字段 | 类型 | 默认值 | 描述 |
+|------|------|--------|------|
+| \`r1Threshold\` | \`BigDecimal\` | 20 | 销售额暴跌阈值（%），触发红色预警 |
+| \`r2Threshold\` | \`BigDecimal\` | 30 | 大量链接滞销占比阈值（%），触发红色预警 |
+| \`y1Threshold\` | \`BigDecimal\` | 10 | 销售额小幅下滑阈值（%），触发黄色预警 |
+| \`y2Ratio\` | \`BigDecimal\` | 2 | 下跌/上涨倍数，触发黄色预警 |
+| \`g1Threshold\` | \`BigDecimal\` | 10 | 销售额增长阈值（%），触发绿色提示 |
+| \`g2Threshold\` | \`BigDecimal\` | 40 | 上涨链接占比阈值（%），触发绿色提示 |
+
+---
+
+## 规则引擎
+
+### 🔴 红色预警（需立即关注）
+
+| 规则 | 条件 |
+|------|------|
+| 销售额大幅下滑预警 | 销售额变化为 **负**，且下滑幅度 **≥ r1Threshold** |
+| 大量链接滞销预警 | 今日未出单链接占比 **≥ r2Threshold** |
+
+### 🟡 黄色预警（值得注意）
+
+| 规则 | 条件 |
+|------|------|
+| 销售额下滑关注 | 销售额变化为 **负**，下滑幅度 **≥ y1Threshold** 且 **< r1Threshold** |
+| 链接下跌趋势明显 | 今日下跌链接数 **>** 今日上涨链接数 **× y2Ratio** |
+| 存在滞销链接 | 今日未出单链接数 **≥ 1** 且未达红色阈值 |
+
+### 🟢 绿色提示（运营亮点）
+
+| 规则 | 条件 |
+|------|------|
+| 销售额稳步增长 | 销售额变化 **≥ g1Threshold** |
+| 多链接表现亮眼 | 今日上涨链接占比 **≥ g2Threshold** |
+
+---
+
+## 响应格式
+
+### 成功响应
+
+\\\`\\\`\\\`json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "诊断结论": {
+      "立即关注": ["销售额暴跌", "大量链接滞销"],
+      "值得注意": ["销售额小幅下滑", "下跌链接偏多"],
+      "运营亮点": ["销售额增长", "爆款涌现"]
+    },
+    "运营诊断": {
+      "核心结论": ["✅ 当天销售额...", "..."],
+      "业务本质": ["..."],
+      "多维度评估": ["..."],
+      "亮点": ["✅ 销售额增长：当天销售额较昨日上涨..."],
+      "风险预警": ["⚠️ 销售额暴跌预警：当天销售额较昨日下跌..."],
+      "运营建议": ["1. 优先处理...", "2. 重点跟进...", "3. ..."]
+    }
+  }
+}
+\\\`\\\`\\\`
+
+### 字段说明
+
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| \`code\` | \`Integer\` | 状态码，200 成功，500 失败 |
+| \`message\` | \`String\` | 提示信息 |
+| \`data.诊断结论.立即关注\` | \`List\<String\>\` | 红色预警规则名称列表 |
+| \`data.诊断结论.值得注意\` | \`List\<String\>\` | 黄色预警规则名称列表 |
+| \`data.诊断结论.运营亮点\` | \`List\<String\>\` | 绿色提示规则名称列表 |
+| \`data.运营诊断.核心结论\` | \`List\<String\>\` | 3-5 条核心结论 |
+| \`data.运营诊断.业务本质\` | \`List\<String\>\` | 2-3 条业务本质解读 |
+| \`data.运营诊断.多维度评估\` | \`List\<String\>\` | 增长质量、商品结构、SKU 健康度评估 |
+| \`data.运营诊断.亮点\` | \`List\<String\>\` | 2-4 条运营亮点 |
+| \`data.运营诊断.风险预警\` | \`List\<String\>\` | 2-4 条风险预警 |
+| \`data.运营诊断.运营建议\` | \`List\<String\>\` | 3-5 条分优先级运营建议 |
+
+### 错误响应
+
+\\\`\\\`\\\`json
+{
+  "code": 500,
+  "message": "智能报告分析失败：具体错误信息",
+  "data": null
+}
+\\\`\\\`\\\`
+
+---
+
+## 请求示例
+
+\\\`\\\`\\\`json
+{
+  "reportDate": "2026-05-11",
+  "todayRevenue": 8500.00,
+  "yesterdayRevenue": 10200.00,
+  "todayOrders": 320,
+  "yesterdayOrders": 410,
+  "todayRisingLinks": 8,
+  "yesterdayRisingLinks": 15,
+  "todayFallingLinks": 22,
+  "yesterdayFallingLinks": 10,
+  "todayNoOrderLinks": 30,
+  "yesterdayNoOrderLinks": 25
+}
+\\\`\\\`\\\`
+
+---
+
+## 响应示例
+
+\\\`\\\`\\\`json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "诊断结论": {
+      "立即关注": ["销售额暴跌"],
+      "值得注意": ["下跌链接偏多"],
+      "运营亮点": []
+    },
+    "运营诊断": {
+      "核心结论": [
+        "✅ 当天销售额 8500.00 元，较昨日下跌 16.67%",
+        "✅ 当天订单量 320 单，较昨日减少 90 单",
+        "⚠️ 今日下跌链接 22 条，是上涨链接的 2.75 倍"
+      ],
+      "业务本质": [
+        "当前销售额和订单量均呈下滑趋势",
+        "今日上涨链接 8 条，下跌链接 22 条，链接表现分化明显",
+        "今日未出单链接 30 条，占比较高"
+      ],
+      "多维度评估": [
+        "增长质量：销售额增速为 -16.67%，订单量同步下降",
+        "商品结构：上涨链接占比 13.3%，下跌链接占比 36.7%",
+        "SKU 健康度：未出单 SKU 占比 50.0%"
+      ],
+      "亮点": [
+        "当前未触发明显运营亮点规则"
+      ],
+      "风险预警": [
+        "销售额大幅下滑预警：下滑幅度达 16.67%，超过阈值 20% 以内需关注",
+        "链接下跌趋势明显：下跌链接 22 条远超上涨链接 8 条"
+      ],
+      "运营建议": [
+        "1. 优先处理销售额下滑与未出单链接占比较高的问题",
+        "2. 重点跟进下跌链接和未出单链接，及时调整 listing、价格和投放策略",
+        "3. 对已表现较好的上涨链接，继续承接流量，避免结构继续失衡"
+      ]
+    }
+  }
+}
+\\\`\\\`\\\`
+
+---
+
+## 处理流程
+
+1. 接收请求参数，应用默认阈值
+2. 调用 AI 生成诊断结论（按规则判断红/黄/绿级别）
+3. 调用 AI 生成运营诊断（核心结论、业务本质、多维度评估、亮点、风险预警、运营建议）
+4. 解析 AI 返回的结构化文本，填充到 \`SmartReportResultVO\\\`
+5. 返回统一封装结果
+
+> **降级策略**：当 AI 调用失败时，自动降级为本地规则引擎（\`evaluateFallbackRules\`），基于阈值规则生成诊断结论和结构化运营诊断模板。
+`;
+
+        document.getElementById('content').innerHTML = marked.parse(markdownContent);
+    </script>
+</body>
+</html>

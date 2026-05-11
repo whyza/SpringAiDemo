@@ -146,8 +146,8 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         return """
                 请基于以下数据和规则判断诊断结论。
                 ## 原始数据
-                当天销售额：%s USD
-                昨日销售额：%s USD
+                当天销售额：%s
+                昨日销售额：%s
                 销售额变化：%s
                 当天订单量：%d 单
                 昨日订单量：%d 单
@@ -197,8 +197,8 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
     private String buildOperationDiagnosisPrompt(SmartReportRequestDTO req, String diagnosisConclusion) {
         return """
                 ## 原始数据
-                当天销售额：%s USD
-                昨日销售额：%s USD
+                当天销售额：%s 元
+                昨日销售额：%s 元
                 销售额变化：%s
                 当天订单量：%d 单
                 昨日订单量：%d 单
@@ -255,8 +255,8 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
 
         StringBuilder content = new StringBuilder();
         content.append("### 核心结论\n");
-        content.append("1. 当天销售额 ").append(formatAmount(req.getTodayRevenue())).append(" USD，昨日销售额 ").append(
-                formatAmount(req.getYesterdayRevenue())).append(" USD，销售额变化 ").append(revenueChange).append("。\n");
+        content.append("1. 当天销售额 ").append(formatAmount(req.getTodayRevenue())).append(" 元，昨日销售额 ").append(
+                formatAmount(req.getYesterdayRevenue())).append(" 元，销售额变化 ").append(revenueChange).append("。\n");
         content.append("2. 当天订单量 ").append(safeInt(req.getTodayOrders())).append(" 单，昨日订单量 ").append(safeInt(
                 req.getYesterdayOrders())).append(" 单。\n");
         content
@@ -279,9 +279,9 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         content
                 .append("1. 销售维度：当天销售额 ")
                 .append(formatAmount(req.getTodayRevenue()))
-                .append(" USD，昨日销售额 ")
+                .append(" 元，昨日销售额 ")
                 .append(formatAmount(req.getYesterdayRevenue()))
-                .append(" USD，变化 ")
+                .append(" 元，变化 ")
                 .append(revenueChange)
                 .append("。\n");
         content

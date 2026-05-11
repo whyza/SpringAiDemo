@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 接口文档 - 智能报告分析</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f0f2f5;
+            color: #1a1a2e;
+            line-height: 1.7;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 40px 0;
+            border-bottom: 4px solid #0f3460;
+        }
+        .header .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .header h1 { font-size: 28px; margin-bottom: 8px; }
+        .header .subtitle { color: #a0aec0; font-size: 15px; }
+        .header .badge {
+            display: inline-block;
+            background: #e53e3e;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 3px 12px;
+            border-radius: 4px;
+            margin-right: 8px;
+        }
+        .header .url {
+            display: inline-block;
+            background: rgba(255,255,255,0.1);
+            font-family: "SFMono-Regular", Consolas, monospace;
+            font-size: 14px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            color: #e2e8f0;
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+
+        .section {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            margin: 24px 0;
+            overflow: hidden;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            padding: 16px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #fafbfc;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title .icon { font-size: 20px; }
+        .section-body { padding: 24px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        table th {
+            background: #f7f8fa;
+            text-align: left;
+            font-weight: 600;
+            color: #4a5568;
+            padding: 10px 12px;
+            border-bottom: 2px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: top;
+        }
+        table tr:hover td { background: #fafbfc; }
+
+        .field-name {
+            font-family: "SFMono-Regular", Consolas, monospace;
+            font-size: 13px;
+            color: #d63384;
+            white-space: nowrap;
+        }
+        .field-type {
+            font-family: "SFMono-Regular", Consolas, monospace;
+            font-size: 13px;
+            color: #0c8599;
+            white-space: nowrap;
+        }
+        .tag-required {
+            display: inline-block;
+            background: #fff5f5;
+            color: #e53e3e;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 1px 8px;
+            border-radius: 3px;
+            border: 1px solid #fed7d7;
+        }
+        .tag-optional {
+            display: inline-block;
+            background: #f0fff4;
+            color: #276749;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 1px 8px;
+            border-radius: 3px;
+            border: 1px solid #c6f6d5;
+        }
+        .tag-default {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .rule-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 768px) { .rule-grid { grid-template-columns: 1fr; } }
+
+        .rule-card {
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+        .rule-card.red { border-left: 4px solid #e53e3e; }
+        .rule-card.yellow { border-left: 4px solid #d69e2e; }
+        .rule-card.green { border-left: 4px solid #38a169; }
+        .rule-card h3 { font-size: 15px; margin-bottom: 12px; }
+        .rule-card.red h3 { color: #c53030; }
+        .rule-card.yellow h3 { color: #b7791f; }
+        .rule-card.green h3 { color: #2f855a; }
+        .rule-card ul { list-style: none; font-size: 14px; }
+        .rule-card ul li { padding: 6px 0; border-bottom: 1px solid #f7fafc; }
+        .rule-card ul li:last-child { border-bottom: none; }
+        .rule-card ul li strong { color: #2d3748; }
+
+        .flow-steps {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .flow-step {
+            flex: 1;
+            min-width: 150px;
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            position: relative;
+        }
+        .flow-step .step-num {
+            display: inline-flex;
+            width: 28px;
+            height: 28px;
+            background: #0f3460;
+            color: #fff;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .flow-step .step-text { font-size: 13px; color: #4a5568; }
+        .flow-step::after {
+            content: "→";
+            position: absolute;
+            right: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #cbd5e0;
+            font-size: 18px;
+        }
+        .flow-step:last-child::after { display: none; }
+
+        pre {
+            background: #f7f8fa !important;
+            border-radius: 6px;
+            padding: 16px !important;
+            font-size: 13px;
+            overflow-x: auto;
+            border: 1px solid #e2e8f0;
+        }
+        pre code { background: none !important; padding: 0 !important; }
+
+        .callout {
+            background: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 16px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #2b6cb0;
+            margin-top: 16px;
+        }
+
+        .resp-section { margin-top: 20px; }
+        .resp-section:first-child { margin-top: 0; }
+
+        .footer {
+            text-align: center;
+            padding: 32px 0;
+            color: #a0aec0;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="container">
+        <h1>📋 智能报告分析接口</h1>
+        <div class="subtitle">基于销售指标和规则阈值，触发规则引擎 + AI 运营诊断</div>
+        <div style="margin-top: 16px;">
+            <span class="badge">POST</span>
+            <span class="url">/api/smart-report/analyze</span>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- 1. 请求参数 -->
+    <div class="section">
+        <div class="section-title"><span class="icon">📥</span> 请求参数</div>
+        <div class="section-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th>字段</th>
+                        <th>类型</th>
+                        <th>必填</th>
+                        <th>默认值</th>
+                        <th>描述</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="field-name">reportDate</span></td>
+                        <td><span class="field-type">LocalDate</span></td>
+                        <td><span class="tag-optional">可选</span></td>
+                        <td class="tag-default">当天</td>
+                        <td>报告日期，格式 yyyy-MM-dd</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">todayRevenue</span></td>
+                        <td><span class="field-type">BigDecimal</span></td>
+                        <td><span class="tag-required">必填</span></td>
+                        <td class="tag-default">—</td>
+                        <td>当天销售额（元），≥ 0</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">yesterdayRevenue</span></td>
+                        <td><span class="field-type">BigDecimal</span></td>
+                        <td><span class="tag-required">必填</span></td>
+                        <td class="tag-default">—</td>
+                        <td>昨日销售额（元），≥ 0</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">todayOrders</span></td>
+                        <td><span class="field-type">Integer</span></td>
+                        <td><span class="tag-required">必填</span></td>
+                        <td class="tag-default">—</td>
+                        <td>当天订单量，≥ 0</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">yesterdayOrders</span></td>
+                        <td><span class="field-type">Integer</span></td>
+                        <td><span class="tag-required">必填</span></td>
+                        <td class="tag-default">—</td>
+                        <td>昨日订单量，≥ 0</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">todayRisingLinks</span></td>
+                        <td><span class="field-type">Integer</span></td>
+                        <td><span class="tag-required">必填</span></td>
+                        <td class="tag-default">—</td>
+                        <td>今日销量上涨链接数，≥ 0</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">yesterdayRisingLinks</span></td>
+                        <td><span class="field-type">Integer</span></td>
+                        <td><span class="tag-required">必填</span></td>
+                        <td class="tag-default">—</td>
+                        <td>昨日销量上涨链接数，≥ 0</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">todayFallingLinks</span></td>
+                        <td><span class="field-type">Integer</span></td>
+                        <td><span class="tag-required">必填</span></td>
+                        <td class="tag-default">—</td>
+                        <td>今日销量下跌链接数，≥ 0</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">yesterdayFallingLinks</span></td>
+                        <td><span class="field-type">Integer</span></td>
+                        <td><span class="tag-required">必填</span></td>
+                        <td class="tag-default">—</td>
+                        <td>昨日销量下跌链接数，≥ 0</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">todayNoOrderLinks</span></td>
+                        <td><span class="field-type">Integer</span></td>
+                        <td><span class="tag-required">必填</span></td>
+                        <td class="tag-default">—</td>
+                        <td>今日未出单链接数，≥ 0</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">yesterdayNoOrderLinks</span></td>
+                        <td><span class="field-type">Integer</span></td>
+                        <td><span class="tag-required">必填</span></td>
+                        <td class="tag-default">—</td>
+                        <td>昨日未出单链接数，≥ 0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 2. 规则阈值 -->
+    <div class="section">
+        <div class="section-title"><span class="icon">⚙️</span> 规则阈值参数</div>
+        <div class="section-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th>字段</th>
+                        <th>类型</th>
+                        <th>默认值</th>
+                        <th>描述</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="field-name">r1Threshold</span></td>
+                        <td><span class="field-type">BigDecimal</span></td>
+                        <td class="tag-default">20</td>
+                        <td>销售额暴跌阈值（%），触发红色预警</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">r2Threshold</span></td>
+                        <td><span class="field-type">BigDecimal</span></td>
+                        <td class="tag-default">30</td>
+                        <td>大量链接滞销占比阈值（%），触发红色预警</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">y1Threshold</span></td>
+                        <td><span class="field-type">BigDecimal</span></td>
+                        <td class="tag-default">10</td>
+                        <td>销售额小幅下滑阈值（%），触发黄色预警</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">y2Ratio</span></td>
+                        <td><span class="field-type">BigDecimal</span></td>
+                        <td class="tag-default">2</td>
+                        <td>下跌/上涨倍数，触发黄色预警</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">g1Threshold</span></td>
+                        <td><span class="field-type">BigDecimal</span></td>
+                        <td class="tag-default">10</td>
+                        <td>销售额增长阈值（%），触发绿色提示</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">g2Threshold</span></td>
+                        <td><span class="field-type">BigDecimal</span></td>
+                        <td class="tag-default">40</td>
+                        <td>上涨链接占比阈值（%），触发绿色提示</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 3. 规则引擎 -->
+    <div class="section">
+        <div class="section-title"><span class="icon">🧠</span> 规则引擎</div>
+        <div class="section-body">
+            <div class="rule-grid">
+                <div class="rule-card red">
+                    <h3>🔴 红色预警 · 需立即关注</h3>
+                    <ul>
+                        <li><strong>销售额大幅下滑预警</strong><br>销售额变化为负，且下滑幅度 ≥ r1Threshold</li>
+                        <li><strong>大量链接滞销预警</strong><br>今日未出单链接占比 ≥ r2Threshold</li>
+                    </ul>
+                </div>
+                <div class="rule-card yellow">
+                    <h3>🟡 黄色预警 · 值得注意</h3>
+                    <ul>
+                        <li><strong>销售额下滑关注</strong><br>销售额变化为负，下滑幅度 ≥ y1Threshold 且 &lt; r1Threshold</li>
+                        <li><strong>链接下跌趋势明显</strong><br>今日下跌链接数 &gt; 今日上涨链接数 × y2Ratio</li>
+                        <li><strong>存在滞销链接</strong><br>今日未出单链接数 ≥ 1 且未达红色阈值</li>
+                    </ul>
+                </div>
+                <div class="rule-card green">
+                    <h3>🟢 绿色提示 · 运营亮点</h3>
+                    <ul>
+                        <li><strong>销售额稳步增长</strong><br>销售额变化 ≥ g1Threshold</li>
+                        <li><strong>多链接表现亮眼</strong><br>今日上涨链接占比 ≥ g2Threshold</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 响应格式 -->
+    <div class="section">
+        <div class="section-title"><span class="icon">📤</span> 响应格式</div>
+        <div class="section-body">
+
+            <div class="resp-section">
+                <h3 style="font-size: 15px; margin-bottom: 8px; color: #2d3748;">✅ 成功响应</h3>
+                <pre><code>{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "诊断结论": {
+      "立即关注": ["销售额暴跌", "大量链接滞销"],
+      "值得注意": ["销售额小幅下滑", "下跌链接偏多"],
+      "运营亮点": ["销售额增长", "爆款涌现"]
+    },
+    "运营诊断": {
+      "核心结论": ["✅ 当天销售额...", "..."],
+      "业务本质": ["..."],
+      "多维度评估": ["..."],
+      "亮点": ["✅ 销售额增长：当天销售额较昨日上涨..."],
+      "风险预警": ["⚠️ 销售额暴跌预警：当天销售额较昨日下跌..."],
+      "运营建议": ["1. 优先处理...", "2. 重点跟进...", "3. ..."]
+    }
+  }
+}</code></pre>
+            </div>
+
+            <div class="resp-section">
+                <h3 style="font-size: 15px; margin-bottom: 8px; color: #2d3748;">📋 字段说明</h3>
+                <table>
+                    <thead>
+                        <tr><th>字段</th><th>类型</th><th>描述</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><span class="field-name">code</span></td><td><span class="field-type">Integer</span></td><td>状态码，200 成功，500 失败</td></tr>
+                        <tr><td><span class="field-name">message</span></td><td><span class="field-type">String</span></td><td>提示信息</td></tr>
+                        <tr><td><span class="field-name">data.诊断结论.立即关注</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>红色预警规则名称列表</td></tr>
+                        <tr><td><span class="field-name">data.诊断结论.值得注意</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>黄色预警规则名称列表</td></tr>
+                        <tr><td><span class="field-name">data.诊断结论.运营亮点</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>绿色提示规则名称列表</td></tr>
+                        <tr><td><span class="field-name">data.运营诊断.核心结论</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>3-5 条核心结论</td></tr>
+                        <tr><td><span class="field-name">data.运营诊断.业务本质</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>2-3 条业务本质解读</td></tr>
+                        <tr><td><span class="field-name">data.运营诊断.多维度评估</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>增长质量、商品结构、SKU 健康度</td></tr>
+                        <tr><td><span class="field-name">data.运营诊断.亮点</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>2-4 条运营亮点</td></tr>
+                        <tr><td><span class="field-name">data.运营诊断.风险预警</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>2-4 条风险预警</td></tr>
+                        <tr><td><span class="field-name">data.运营诊断.运营建议</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>3-5 条分优先级运营建议</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="resp-section">
+                <h3 style="font-size: 15px; margin-bottom: 8px; color: #2d3748;">❌ 错误响应</h3>
+                <pre><code>{
+  "code": 500,
+  "message": "智能报告分析失败：具体错误信息",
+  "data": null
+}</code></pre>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 5. 请求示例 -->
+    <div class="section">
+        <div class="section-title"><span class="icon">📝</span> 请求示例</div>
+        <div class="section-body">
+            <pre><code>{
+  "reportDate": "2026-05-11",
+  "todayRevenue": 8500.00,
+  "yesterdayRevenue": 10200.00,
+  "todayOrders": 320,
+  "yesterdayOrders": 410,
+  "todayRisingLinks": 8,
+  "yesterdayRisingLinks": 15,
+  "todayFallingLinks": 22,
+  "yesterdayFallingLinks": 10,
+  "todayNoOrderLinks": 30,
+  "yesterdayNoOrderLinks": 25
+}</code></pre>
+        </div>
+    </div>
+
+    <!-- 6. 响应示例 -->
+    <div class="section">
+        <div class="section-title"><span class="icon">📨</span> 响应示例</div>
+        <div class="section-body">
+            <pre><code>{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "诊断结论": {
+      "立即关注": ["销售额暴跌"],
+      "值得注意": ["下跌链接偏多"],
+      "运营亮点": []
+    },
+    "运营诊断": {
+      "核心结论": [
+        "✅ 当天销售额 8500.00 元，较昨日下跌 16.67%",
+        "✅ 当天订单量 320 单，较昨日减少 90 单",
+        "⚠️ 今日下跌链接 22 条，是上涨链接的 2.75 倍"
+      ],
+      "业务本质": [
+        "当前销售额和订单量均呈下滑趋势",
+        "今日上涨链接 8 条，下跌链接 22 条，链接表现分化明显",
+        "今日未出单链接 30 条，占比较高"
+      ],
+      "多维度评估": [
+        "增长质量：销售额增速为 -16.67%，订单量同步下降",
+        "商品结构：上涨链接占比 13.3%，下跌链接占比 36.7%",
+        "SKU 健康度：未出单 SKU 占比 50.0%"
+      ],
+      "亮点": ["当前未触发明显运营亮点规则"],
+      "风险预警": [
+        "销售额大幅下滑预警：下滑幅度达 16.67%，超过阈值 20% 以内需关注",
+        "链接下跌趋势明显：下跌链接 22 条远超上涨链接 8 条"
+      ],
+      "运营建议": [
+        "1. 优先处理销售额下滑与未出单链接占比较高的问题",
+        "2. 重点跟进下跌链接和未出单链接，及时调整 listing、价格和投放策略",
+        "3. 对已表现较好的上涨链接，继续承接流量，避免结构继续失衡"
+      ]
+    }
+  }
+}</code></pre>
+        </div>
+    </div>
+
+    <!-- 7. 处理流程 -->
+    <div class="section">
+        <div class="section-title"><span class="icon">🔄</span> 处理流程</div>
+        <div class="section-body">
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <div class="step-num">1</div>
+                    <div class="step-text">接收请求参数<br>应用默认阈值</div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">2</div>
+                    <div class="step-text">AI 生成诊断结论<br>判断红/黄/绿级别</div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">3</div>
+                    <div class="step-text">AI 生成运营诊断</div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">4</div>
+                    <div class="step-text">解析结构化文本<br>填充返回结果</div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-num">5</div>
+                    <div class="step-text">返回统一封装结果</div>
+                </div>
+            </div>
+
+            <div class="callout">
+                <strong>⚠️ 降级策略：</strong>当 AI 调用失败时，自动降级为本地规则引擎（<code>evaluateFallbackRules</code>），
+                基于阈值规则生成诊断结论和结构化运营诊断模板。
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="footer">
+    Generated by AI Programming Assistant &middot; lingyi ai-web-analysis
+</div>
+
+</body>
+</html>

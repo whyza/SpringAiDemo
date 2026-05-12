@@ -61,24 +61,24 @@ public class SmartReportRequestDTO {
     private Integer yesterdayNoOrderLinks;
 
     /**
-     * R1: 销售额暴跌阈值（%），默认 20
+     * R1: 销售额大幅下滑阈值（%），默认 20
      */
     private BigDecimal r1Threshold;
 
     /**
-     * R2: 大量链接滞销占比（%），默认 30
+     * R2: 大量链接下跌阈值（%），默认 30
      */
     private BigDecimal r2Threshold;
+
+    /**
+     * R3: 大量链接未出单阈值（%），默认 30
+     */
+    private BigDecimal r3Threshold;
 
     /**
      * Y1: 销售额小幅下滑阈值（%），默认 10
      */
     private BigDecimal y1Threshold;
-
-    /**
-     * Y2: 下跌/上涨倍数，默认 2
-     */
-    private BigDecimal y2Ratio;
 
     /**
      * G1: 销售额增长阈值（%），默认 10
@@ -101,11 +101,11 @@ public class SmartReportRequestDTO {
         if (r2Threshold == null) {
             r2Threshold = BigDecimal.valueOf(30);
         }
+        if (r3Threshold == null) {
+            r3Threshold = BigDecimal.valueOf(30);
+        }
         if (y1Threshold == null) {
             y1Threshold = BigDecimal.valueOf(10);
-        }
-        if (y2Ratio == null) {
-            y2Ratio = BigDecimal.valueOf(2);
         }
         if (g1Threshold == null) {
             g1Threshold = BigDecimal.valueOf(10);

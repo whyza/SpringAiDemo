@@ -51,11 +51,9 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         result.setDiagnosisConclusions(diagnosisConclusion);
 
         SmartReportResultVO.OperationDiagnosisVO operationDiagnosis = new SmartReportResultVO.OperationDiagnosisVO();
-        operationDiagnosis.setCoreConclusions(structuredDiagnosis.getCoreConclusions());
-        operationDiagnosis.setBusinessEssence(structuredDiagnosis.getBusinessEssence());
-        operationDiagnosis.setMultiDimensionalEvaluations(structuredDiagnosis.getMultiDimensionalEvaluations());
-        operationDiagnosis.setHighlights(structuredDiagnosis.getHighlights());
-        operationDiagnosis.setRiskWarnings(structuredDiagnosis.getRiskWarnings());
+        operationDiagnosis.setOverallPerformance(structuredDiagnosis.getOverallPerformance());
+        operationDiagnosis.setLinkStructureAnalysis(structuredDiagnosis.getLinkStructureAnalysis());
+        operationDiagnosis.setAnomalyLogicJudgment(structuredDiagnosis.getAnomalyLogicJudgment());
         operationDiagnosis.setOperationSuggestions(structuredDiagnosis.getOperationSuggestions());
         result.setOperationDiagnosis(operationDiagnosis);
         return result;
@@ -63,14 +61,14 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
 
     private String generateDiagnosisConclusion(SmartReportRequestDTO req) {
         String systemPrompt = """
-                你是一位电商运营诊断助手。
+                你是一位亚马逊运营诊断助手。
                 你需要严格根据输入数据和给定规则，输出固定格式的诊断结论。
                 
                 规则要求：
                 1. 只允许使用以下规则名称：
-                红色：销售额大幅下滑预警、大量链接滞销预警
-                黄色：销售额下滑关注、链接下跌趋势明显、存在滞销链接
-                绿色：销售额稳步增长、多链接表现亮眼、利润率表现优秀
+                红色：销售额大幅下滑、大量链接下跌、大量链接未出单
+                黄色：销售额小幅下滑、部分链接下跌、部分链接未出单
+                绿色：销售额稳步增长、上涨链接占比亮眼
                 2. 红色文案固定为：🔴 **需立即关注：** {规则名称，逗号分隔}
                 3. 黄色文案固定为：🟡 **值得关注：** {规则名称，逗号分隔}
                 4. 绿色文案固定为：🟢 **本周运营状态良好！** {规则名称，逗号分隔}
@@ -93,44 +91,26 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
 
     private String generateOperationDiagnosis(SmartReportRequestDTO req, String diagnosisConclusion) {
         String systemPrompt = """
-                你是一位专业的电商运营顾问，正在基于输入数据生成当天运营诊断。
-                你只能依据提供的数据和诊断结论输出内容，不允许编造任何未提供的数据，不允许新增业务事实。
-                
-                输出要求如下：
-                1. 使用简体中文，语气专业、直接。
-                2. 只输出“运营诊断”正文，不要输出开场白。
-                3. 必须包含以下六部分：
-                核心结论、业务本质、多维度评估、亮点、风险预警、运营建议。
-                
-                ### 核心结论
-                用 3-5 条“✅/⚠️”开头的要点总结今日表现，每条 1-2 句话，必须引用输入中的具体数字。
-                
-                ### 业务本质
-                2-3 条，基于数据解读：
-                销量和销售额的涨跌情况
-                客单价变化情况
-                量价关系（只描述数据，不推测原因）
-                
-                ### 多维度评估（基于输入数据）
-                增长质量：销量增速 vs 销售额增速的差距
-                商品结构：上涨和下跌商品的数量和比例
-                SKU 健康度：未出单 SKU 的数量和占比
-                
-                ### 亮点（有就写，2-4 条）
-                ✅ [简短标题]：引用输入中的具体数字
-                
-                ### 风险预警（有就写，2-4 条）
-                ⚠️ [简短标题]：引用输入中的具体数字
-                
-                ### 运营建议（必须写，3-5 条，分优先级）
-                最紧急要处理的 1 条建议
-                次重要的 1 条建议
-                可择机推进的 1 条建议
-                
-                4. “亮点”部分使用“✅”开头逐条输出。
-                5. “风险预警”部分使用“⚠️”开头逐条输出。
-                6. 如果某部分没有充分数据支撑，可以基于现有输入简洁表达，不要扩写推测内容。
-                7. 所有数字必须直接来自输入数据或诊断结论。
+                你是一位资深亚马逊电商运营顾问，请根据以下数据为卖家生成今日店铺健康诊断日报。
+
+                ## 严格规则
+                1. 禁止编造任何输入中不存在的数据，只能使用明确提供的数据
+                2. 禁止使用"系统检测"、"算法分析"、"AI 分析"等机械话术
+                3. 必须引用输入中的具体数字进行分析，不得笼统描述
+                4. 总字数控制在 500 字以内，简洁精炼
+                5. 语气专业通俗，站在卖家视角，像资深运营在跟卖家沟通
+                6. 数据不足以支撑某部分分析时，直接跳过，不要硬写
+                7. 直接输出报告正文，不要加"根据提供的数据"、"基于以上数据"等开场白
+
+                ## 输出结构（严格按此顺序）
+
+                ① 整体表现：对比昨日今日销售额、订单降幅，精准计算客单价；通过客单价判断下滑是否为降价导致，直白说明是流量 / 转化真实缩水，结合自定义规则判定行情预警等级
+
+                ② 链接结构分析：用极简表格展示上涨、下跌、平稳、未出单链接 + 数量 + 占比；标注风险警告，对比昨日、今日未出单链接差值，算出新增哑火链接数量，判断店铺链接健康度、产品支撑能力。风险项用 ⚠️ 标记。
+
+                ③ 异常逻辑判断：根据涨跌链接分布，判断是个别链接问题还是店铺整体性下跌；分析行情下跌底层原因，罗列需要排查的亚马逊常见诱因。风险项用 ⚠️ 标记。
+
+                ④ 运营建议（必须有）：全部为低风险、可落地实操动作；区分排查优先级，区分平台原因 / 店铺原因，弱势行情禁止大幅改动，以排查、维稳、观察为主，语言直白通俗。正向建议用 ✅ 开头。
                 """;
 
         String userPrompt = buildOperationDiagnosisPrompt(req, diagnosisConclusion);
@@ -143,92 +123,99 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
     }
 
     private String buildDiagnosisConclusionPrompt(SmartReportRequestDTO req) {
-        return """
+        int todayTotalLinks = calculateTodayTotalLinks(req);
+        BigDecimal revenueChange = calculateRevenueChange(req);
+        return String.format("""
                 请基于以下数据和规则判断诊断结论。
-                ## 原始数据
-                当天销售额：%s
-                昨日销售额：%s
+                ## 今日数据汇总
+                昨日销售额：%s 元
+                今日销售额：%s 元
                 销售额变化：%s
-                当天订单量：%d 单
-                昨日订单量：%d 单
-                今日上涨链接数：%d
-                昨日上涨链接数：%d
-                今日下跌链接数：%d
-                昨日下跌链接数：%d
-                今日未出单链接数：%d
-                昨日未出单链接数：%d
-                今日总链接数：%d
-                昨日总链接数：%d
-                
-                ## 判断规则
+                昨日订单量：%d
+                今日订单量：%d
+                当天销量上涨链接数：%d
+                当天销量下跌链接数：%d
+                当天总链接数：%d
+                当天未出单链接数：%d
+                昨天未出单链接数：%d
+
+                ## 客户自定义规则
                 红色规则：
-                1. 销售额大幅下滑预警：当销售额变化为负，且下滑幅度大于等于 %s%% 时命中。
-                2. 大量链接滞销预警：当今日未出单链接数占今日总链接数比例大于等于 %s%% 时命中。
+                1. 销售额大幅下滑：当销售额变化为负，且下滑幅度 >= %s%% 时命中。
+                2. 大量链接下跌：当今天下跌链接数占比 >= %s%% 时命中。
+                3. 大量链接未出单：当今天未出单链接占比 >= %s%% 时命中。
                 黄色规则：
-                1. 销售额下滑关注：当销售额变化为负，且下滑幅度大于等于 %s%%，同时小于红色销售额阈值时命中。
-                2. 链接下跌趋势明显：当今日下跌链接数大于今日上涨链接数的 %s 倍时命中。
-                3. 存在滞销链接：当今日未出单链接数大于等于 1，且未达到红色未出单占比阈值时命中。
+                1. 销售额小幅下滑：当销售额变化为负，下滑幅度 >= %s%% 且 < %s%% 时命中。
+                2. 部分链接下跌：当今天存在下跌链接，且下跌链接占比未达红色阈值时命中。
+                3. 部分链接未出单：当今天存在未出单链接，且未出单占比未达红色阈值时命中。
                 绿色规则：
-                1. 销售额稳步增长：当销售额变化大于等于 %s%% 时命中。
-                2. 多链接表现亮眼：当今日上涨链接数占今日总链接数比例大于等于 %s%% 时命中。
-                """.formatted(
-                formatAmount(req.getTodayRevenue()),
+                1. 销售额稳步增长：当销售额变化 >= %s%% 时命中。
+                2. 上涨链接占比亮眼：当今天上涨链接占比 >= %s%% 时命中。
+                """,
                 formatAmount(req.getYesterdayRevenue()),
-                formatPercentTrend(calculateRevenueChange(req)),
-                safeInt(req.getTodayOrders()),
+                formatAmount(req.getTodayRevenue()),
+                formatPercentTrend(revenueChange),
                 safeInt(req.getYesterdayOrders()),
+                safeInt(req.getTodayOrders()),
                 safeInt(req.getTodayRisingLinks()),
-                safeInt(req.getYesterdayRisingLinks()),
                 safeInt(req.getTodayFallingLinks()),
-                safeInt(req.getYesterdayFallingLinks()),
+                todayTotalLinks,
                 safeInt(req.getTodayNoOrderLinks()),
                 safeInt(req.getYesterdayNoOrderLinks()),
-                calculateTodayTotalLinks(req),
-                calculateYesterdayTotalLinks(req),
                 formatAmount(req.getR1Threshold()),
                 formatAmount(req.getR2Threshold()),
+                formatAmount(req.getR3Threshold()),
                 formatAmount(req.getY1Threshold()),
-                formatAmount(req.getY2Ratio()),
+                formatAmount(req.getR1Threshold()),
                 formatAmount(req.getG1Threshold()),
                 formatAmount(req.getG2Threshold())
         );
     }
 
     private String buildOperationDiagnosisPrompt(SmartReportRequestDTO req, String diagnosisConclusion) {
-        return """
-                ## 原始数据
-                当天销售额：%s 元
+        int todayTotalLinks = calculateTodayTotalLinks(req);
+        BigDecimal revenueChange = calculateRevenueChange(req);
+        return String.format("""
+                ## 今日数据汇总
                 昨日销售额：%s 元
-                销售额变化：%s
-                当天订单量：%d 单
-                昨日订单量：%d 单
-                今日上涨链接数：%d
-                昨日上涨链接数：%d
-                今日下跌链接数：%d
-                昨日下跌链接数：%d
-                今日未出单链接数：%d
-                昨日未出单链接数：%d
-                今日总链接数：%d
-                昨日总链接数：%d
-                
+                今日销售额：%s 元
+                昨日订单量：%d
+                今日订单量：%d
+                当天销量上涨链接数：%d
+                当天销量下跌链接数：%d
+                当天总链接数：%d
+                当天未出单链接数：%d
+                昨天未出单链接数：%d
+
+                ## 客户自定义规则
+                - 销售额大幅下滑——当天销售额相较昨日下降幅度达到 %s%%
+                - 大量链接下跌——当天下跌链接数占当天总链接数的比例达到 %s%%
+                - 大量链接未出单——当天未出单链接占总链接数的比例达到 %s%%
+                - 销售额小幅下滑——当天销售额下降幅度达到 %s%%，但未达到 %s%%
+                - 销售额稳步增长——当天销售额相较昨日增长幅度达到 %s%%
+                - 上涨链接占比亮眼——当天上涨链接数占当天总链接数比例达到 %s%%
+
                 ## 诊断结论
                 %s
-                
-                请基于以上内容输出完整的运营诊断正文。
-                """.formatted(
-                formatAmount(req.getTodayRevenue()),
+
+                请基于以上数据和规则，输出完整的运营诊断正文。
+                """,
                 formatAmount(req.getYesterdayRevenue()),
-                formatPercentTrend(calculateRevenueChange(req)),
-                safeInt(req.getTodayOrders()),
+                formatAmount(req.getTodayRevenue()),
                 safeInt(req.getYesterdayOrders()),
+                safeInt(req.getTodayOrders()),
                 safeInt(req.getTodayRisingLinks()),
-                safeInt(req.getYesterdayRisingLinks()),
                 safeInt(req.getTodayFallingLinks()),
-                safeInt(req.getYesterdayFallingLinks()),
+                todayTotalLinks,
                 safeInt(req.getTodayNoOrderLinks()),
                 safeInt(req.getYesterdayNoOrderLinks()),
-                calculateTodayTotalLinks(req),
-                calculateYesterdayTotalLinks(req),
+                formatAmount(req.getR1Threshold()),
+                formatAmount(req.getR2Threshold()),
+                formatAmount(req.getR3Threshold()),
+                formatAmount(req.getY1Threshold()),
+                formatAmount(req.getR1Threshold()),
+                formatAmount(req.getG1Threshold()),
+                formatAmount(req.getG2Threshold()),
                 diagnosisConclusion
         );
     }
@@ -254,86 +241,44 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         String revenueChange = formatPercentTrend(calculateRevenueChange(req));
 
         StringBuilder content = new StringBuilder();
-        content.append("### 核心结论\n");
-        content.append("1. 当天销售额 ").append(formatAmount(req.getTodayRevenue())).append(" 元，昨日销售额 ").append(
-                formatAmount(req.getYesterdayRevenue())).append(" 元，销售额变化 ").append(revenueChange).append("。\n");
-        content.append("2. 当天订单量 ").append(safeInt(req.getTodayOrders())).append(" 单，昨日订单量 ").append(safeInt(
-                req.getYesterdayOrders())).append(" 单。\n");
-        content
-                .append("3. 今日总链接数 ")
-                .append(todayTotalLinks)
-                .append("，昨日总链接数 ")
-                .append(yesterdayTotalLinks)
-                .append("。\n\n");
 
-        content.append("### 业务本质\n");
-        content.append("1. 当前经营表现主要由销售额、订单量和链接结构共同驱动。\n");
-        content.append("2. 今日上涨链接 ").append(safeInt(req.getTodayRisingLinks())).append("，今日下跌链接 ").append(
-                safeInt(req.getTodayFallingLinks())).append("，说明链接表现存在分化。\n");
-        content
-                .append("3. 今日未出单链接 ")
-                .append(safeInt(req.getTodayNoOrderLinks()))
-                .append("，直接反映低效链接压力。\n\n");
+        // ① 整体表现
+        content.append("① 整体表现：");
+        content.append("今日销售额 ").append(formatAmount(req.getTodayRevenue())).append(" 元，昨日销售额 ").append(
+                formatAmount(req.getYesterdayRevenue())).append(" 元，变化 ").append(revenueChange).append("。");
+        content.append("今日订单量 ").append(safeInt(req.getTodayOrders())).append(" 单，昨日订单量 ").append(safeInt(
+                req.getYesterdayOrders())).append(" 单。");
+        content.append("今日总链接数 ").append(todayTotalLinks).append("，昨日总链接数 ").append(yesterdayTotalLinks).append("。\n\n");
 
-        content.append("### 多维度评估\n");
-        content
-                .append("1. 销售维度：当天销售额 ")
-                .append(formatAmount(req.getTodayRevenue()))
-                .append(" 元，昨日销售额 ")
-                .append(formatAmount(req.getYesterdayRevenue()))
-                .append(" 元，变化 ")
-                .append(revenueChange)
-                .append("。\n");
-        content
-                .append("2. 订单维度：当天订单量 ")
-                .append(safeInt(req.getTodayOrders()))
-                .append(" 单，昨日订单量 ")
-                .append(safeInt(req.getYesterdayOrders()))
-                .append(" 单。\n");
-        content
-                .append("3. 链接维度：今日上涨 ")
-                .append(safeInt(req.getTodayRisingLinks()))
-                .append("，今日下跌 ")
-                .append(safeInt(req.getTodayFallingLinks()))
-                .append("，今日未出单 ")
-                .append(safeInt(req.getTodayNoOrderLinks()))
-                .append("。\n");
-        content
-                .append("4. 对比维度：昨日上涨 ")
-                .append(safeInt(req.getYesterdayRisingLinks()))
-                .append("，昨日下跌 ")
-                .append(safeInt(req.getYesterdayFallingLinks()))
-                .append("，昨日未出单 ")
-                .append(safeInt(req.getYesterdayNoOrderLinks()))
-                .append("。\n\n");
+        // ② 链接结构分析
+        content.append("② 链接结构分析：");
+        content.append("上涨 ").append(safeInt(req.getTodayRisingLinks())).append(" 个，下跌 ").append(safeInt(
+                req.getTodayFallingLinks())).append(" 个，未出单 ").append(safeInt(req.getTodayNoOrderLinks())).append(" 个，总链接 ")
+                .append(todayTotalLinks).append(" 个。");
+        content.append("昨日未出单 ").append(safeInt(req.getYesterdayNoOrderLinks())).append(" 个，未出单变化 ")
+                .append(safeInt(req.getTodayNoOrderLinks()) - safeInt(req.getYesterdayNoOrderLinks())).append(" 个。\n\n");
 
-        content.append("### 亮点\n");
-        if (diagnosisConclusion.contains("🟢")) {
-            appendLabeledLines(content, diagnosisConclusion, "🟢", "✅ ");
+        // ③ 异常逻辑判断
+        content.append("③ 异常逻辑判断：");
+        boolean hasRisk = diagnosisConclusion.contains("🔴") || diagnosisConclusion.contains("🟡");
+        if (hasRisk) {
+            content.append("触发预警规则，需关注异常链接。");
+            if (diagnosisConclusion.contains("🔴")) {
+                content.append(" ⚠️ 存在红色预警，需立即排查。");
+            }
+            if (diagnosisConclusion.contains("🟡")) {
+                content.append(" ⚠️ 存在黄色预警，建议关注。");
+            }
         } else {
-            content.append("✅ 当前未触发明显运营亮点规则。\n");
+            content.append("暂未发现明显异常，链接结构相对稳定。");
         }
-        content.append("\n");
+        content.append("\n\n");
 
-        content.append("### 风险预警\n");
-        boolean hasRisk = false;
-        if (diagnosisConclusion.contains("🔴")) {
-            appendLabeledLines(content, diagnosisConclusion, "🔴", "⚠️ ");
-            hasRisk = true;
-        }
-        if (diagnosisConclusion.contains("🟡")) {
-            appendLabeledLines(content, diagnosisConclusion, "🟡", "⚠️ ");
-            hasRisk = true;
-        }
-        if (!hasRisk) {
-            content.append("⚠️ 当前未触发明显风险预警规则。\n");
-        }
-        content.append("\n");
-
-        content.append("### 运营建议\n");
-        content.append("1. 优先处理销售额下滑与未出单链接占比较高的问题。\n");
-        content.append("2. 重点跟进下跌链接和未出单链接，及时调整 listing、价格和投放策略。\n");
-        content.append("3. 对已表现较好的上涨链接，继续承接流量，避免结构继续失衡。\n");
+        // ④ 运营建议
+        content.append("④ 运营建议：\n");
+        content.append("✅ 优先排查销售额变化原因，检查客单价是否稳定。弱势行情以排查为主，避免大幅改动。\n");
+        content.append("✅ 重点跟进下跌链接和未出单链接，及时优化 listing、广告投放和竞价策略，区分平台原因还是店铺原因。\n");
+        content.append("✅ 对已表现较好的上涨链接，继续承接流量，维持广告预算，避免因结构失衡拖累整体表现。\n");
 
         return content.toString();
     }
@@ -344,41 +289,44 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         result.setRedAlerts(extractDiagnosisConclusionLines(diagnosisConclusionText, "🔴"));
         result.setYellowAlerts(extractDiagnosisConclusionLines(diagnosisConclusionText, "🟡"));
         result.setGreenHighlights(extractDiagnosisConclusionLines(diagnosisConclusionText, "🟢"));
-        result.setCoreConclusions(extractSectionLines(operationDiagnosisText, "### 核心结论", "### 业务本质"));
-        result.setBusinessEssence(extractSectionLines(operationDiagnosisText, "### 业务本质", "### 多维度评估"));
-        result.setMultiDimensionalEvaluations(extractSectionLines(
-                operationDiagnosisText,
-                "### 多维度评估",
-                "### 亮点"
-        ));
-        result.setHighlights(extractSectionLines(operationDiagnosisText, "### 亮点", "### 风险预警"));
-        result.setRiskWarnings(extractSectionLines(operationDiagnosisText, "### 风险预警", "### 运营建议"));
-        result.setOperationSuggestions(extractSectionLines(operationDiagnosisText, "### 运营建议", null));
+        result.setOverallPerformance(extractSectionByNumber(operationDiagnosisText, "①", "②"));
+        result.setLinkStructureAnalysis(extractSectionByNumber(operationDiagnosisText, "②", "③"));
+        result.setAnomalyLogicJudgment(extractSectionByNumber(operationDiagnosisText, "③", "④"));
+        result.setOperationSuggestions(extractSectionByNumber(operationDiagnosisText, "④", null));
         return result;
     }
 
-    private List<String> extractSectionLines(String content, String startMarker, String endMarker) {
+    private List<String> extractSectionByNumber(String content, String currentNum, String nextNum) {
         if (content == null || content.trim().isEmpty()) {
             return Collections.emptyList();
         }
-        int start = content.indexOf(startMarker);
-        if (start < 0) {
+        int fromIdx = content.indexOf(currentNum);
+        if (fromIdx < 0) {
             return Collections.emptyList();
         }
-        start += startMarker.length();
-        int end = endMarker == null ? content.length() : content.indexOf(endMarker, start);
-        if (end < 0) {
-            end = content.length();
+        int toIdx = nextNum == null ? content.length() : content.indexOf(nextNum, fromIdx + 1);
+        if (toIdx < 0) {
+            toIdx = content.length();
         }
-
-        String section = content.substring(start, end).trim();
+        // Extract content between current and next marker
+        String section = content.substring(fromIdx + 1, toIdx).trim();
+        // Remove the label prefix up to the first colon (e.g., "整体表现：")
+        int labelEnd = section.indexOf("：");
+        if (labelEnd > 0 && labelEnd < 30) {
+            section = section.substring(labelEnd + 1).trim();
+        } else {
+            // No colon found, skip the first line (likely a label line)
+            int nl = section.indexOf("\n");
+            if (nl > 0 && nl < 30) {
+                section = section.substring(nl + 1).trim();
+            }
+        }
         if (section.isEmpty()) {
             return Collections.emptyList();
         }
-
         List<String> result = new ArrayList<>();
         for (String line : section.split("\\r?\\n")) {
-            String cleaned = line.replaceFirst("^[0-9]+\\.", "").replace("✅", "").replace("⚠️", "").trim();
+            String cleaned = line.replaceFirst("^[0-9]+\\.\\s*", "").replace("✅", "").replace("⚠️", "").trim();
             if (!cleaned.isEmpty()) {
                 result.add(cleaned);
             }
@@ -424,68 +372,64 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         result.setYellowAlerts(new ArrayList<>());
         result.setGreenAlerts(new ArrayList<>());
 
+        // R1: 销售额大幅下滑
         if (revenueChange.compareTo(BigDecimal.ZERO) < 0 && revenueChange.abs().compareTo(req.getR1Threshold()) >= 0) {
-            result.getRedAlerts().add("销售额暴跌");
+            result.getRedAlerts().add("销售额大幅下滑");
         }
 
+        // R2: 大量链接下跌（下跌链接占比 >= R2 阈值）
         if (todayTotalLinks > 0) {
-            BigDecimal noOrderRatio = calculateLinkRatio(req.getTodayNoOrderLinks(), todayTotalLinks);
-            if (noOrderRatio.compareTo(req.getR2Threshold()) >= 0) {
-                result.getRedAlerts().add("大量链接滞销");
+            BigDecimal fallingRatio = calculateLinkRatio(req.getTodayFallingLinks(), todayTotalLinks);
+            if (fallingRatio.compareTo(req.getR2Threshold()) >= 0) {
+                result.getRedAlerts().add("大量链接下跌");
             }
         }
 
+        // R3: 大量链接未出单（未出单链接占比 >= R3 阈值）
+        if (todayTotalLinks > 0) {
+            BigDecimal noOrderRatio = calculateLinkRatio(req.getTodayNoOrderLinks(), todayTotalLinks);
+            if (noOrderRatio.compareTo(req.getR3Threshold()) >= 0) {
+                result.getRedAlerts().add("大量链接未出单");
+            }
+        }
+
+        // Y1: 销售额小幅下滑
         if (revenueChange.compareTo(BigDecimal.ZERO) < 0 && revenueChange
                 .abs()
                 .compareTo(req.getY1Threshold()) >= 0 && revenueChange.abs().compareTo(req.getR1Threshold()) < 0) {
             result.getYellowAlerts().add("销售额小幅下滑");
         }
 
-        if (BigDecimal.valueOf(safeInt(req.getTodayFallingLinks())).compareTo(BigDecimal
-                .valueOf(safeInt(req.getTodayRisingLinks()))
-                .multiply(defaultDecimal(req.getY2Ratio()))) > 0) {
-            result.getYellowAlerts().add("下跌链接偏多");
-        }
-
-        if (safeInt(req.getTodayNoOrderLinks()) >= 1 && todayTotalLinks > 0) {
-            BigDecimal noOrderRatio = calculateLinkRatio(req.getTodayNoOrderLinks(), todayTotalLinks);
-            if (noOrderRatio.compareTo(req.getR2Threshold()) < 0) {
-                result.getYellowAlerts().add("存在滞销链接");
+        // Y2: 部分链接下跌（存在下跌链接，但占比未达 R2 阈值，与 R2 互斥）
+        if (todayTotalLinks > 0) {
+            BigDecimal fallingRatio = calculateLinkRatio(req.getTodayFallingLinks(), todayTotalLinks);
+            if (safeInt(req.getTodayFallingLinks()) > 0 && fallingRatio.compareTo(req.getR2Threshold()) < 0) {
+                result.getYellowAlerts().add("部分链接下跌");
             }
         }
 
-        if (revenueChange.compareTo(req.getG1Threshold()) >= 0) {
-            result.getGreenAlerts().add("销售额增长");
+        // Y3: 部分链接未出单（存在未出单链接，但占比未达 R3 阈值，与 R3 互斥）
+        if (todayTotalLinks > 0) {
+            BigDecimal noOrderRatio = calculateLinkRatio(req.getTodayNoOrderLinks(), todayTotalLinks);
+            if (safeInt(req.getTodayNoOrderLinks()) > 0 && noOrderRatio.compareTo(req.getR3Threshold()) < 0) {
+                result.getYellowAlerts().add("部分链接未出单");
+            }
         }
 
+        // G1: 销售额稳步增长
+        if (revenueChange.compareTo(req.getG1Threshold()) >= 0) {
+            result.getGreenAlerts().add("销售额稳步增长");
+        }
+
+        // G2: 上涨链接占比亮眼
         if (todayTotalLinks > 0) {
             BigDecimal risingRatio = calculateLinkRatio(req.getTodayRisingLinks(), todayTotalLinks);
             if (risingRatio.compareTo(req.getG2Threshold()) >= 0) {
-                result.getGreenAlerts().add("爆款涌现");
+                result.getGreenAlerts().add("上涨链接占比亮眼");
             }
         }
 
         return result;
-    }
-
-    private void appendLabeledLines(StringBuilder builder, String diagnosisConclusion, String colorTag, String prefix) {
-        String[] lines = diagnosisConclusion.split("\\r?\\n");
-        for (String line : lines) {
-            if (!line.startsWith(colorTag)) {
-                continue;
-            }
-            int index = line.lastIndexOf("：");
-            String content = index >= 0 ? line.substring(index + 1).trim() : line.trim();
-            if (content.isEmpty()) {
-                continue;
-            }
-            String[] items = content.split("[，,]");
-            for (String item : items) {
-                if (!item.trim().isEmpty()) {
-                    builder.append(prefix).append(item.trim()).append("\n");
-                }
-            }
-        }
     }
 
     private BigDecimal calculateRevenueChange(SmartReportRequestDTO req) {
@@ -548,11 +492,9 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         private List<String> redAlerts;
         private List<String> yellowAlerts;
         private List<String> greenHighlights;
-        private List<String> coreConclusions;
-        private List<String> businessEssence;
-        private List<String> multiDimensionalEvaluations;
-        private List<String> highlights;
-        private List<String> riskWarnings;
+        private List<String> overallPerformance;
+        private List<String> linkStructureAnalysis;
+        private List<String> anomalyLogicJudgment;
         private List<String> operationSuggestions;
     }
 }

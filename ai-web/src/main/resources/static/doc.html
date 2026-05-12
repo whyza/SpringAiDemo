@@ -353,37 +353,37 @@
                         <td><span class="field-name">r1Threshold</span></td>
                         <td><span class="field-type">BigDecimal</span></td>
                         <td class="tag-default">20</td>
-                        <td>销售额暴跌阈值（%），触发红色预警</td>
+                        <td>销售额大幅下滑阈值（%），触发红色 R1</td>
                     </tr>
                     <tr>
                         <td><span class="field-name">r2Threshold</span></td>
                         <td><span class="field-type">BigDecimal</span></td>
                         <td class="tag-default">30</td>
-                        <td>大量链接滞销占比阈值（%），触发红色预警</td>
+                        <td>大量链接下跌阈值（%），触发红色 R2</td>
+                    </tr>
+                    <tr>
+                        <td><span class="field-name">r3Threshold</span></td>
+                        <td><span class="field-type">BigDecimal</span></td>
+                        <td class="tag-default">30</td>
+                        <td>大量链接未出单阈值（%），触发红色 R3</td>
                     </tr>
                     <tr>
                         <td><span class="field-name">y1Threshold</span></td>
                         <td><span class="field-type">BigDecimal</span></td>
                         <td class="tag-default">10</td>
-                        <td>销售额小幅下滑阈值（%），触发黄色预警</td>
-                    </tr>
-                    <tr>
-                        <td><span class="field-name">y2Ratio</span></td>
-                        <td><span class="field-type">BigDecimal</span></td>
-                        <td class="tag-default">2</td>
-                        <td>下跌/上涨倍数，触发黄色预警</td>
+                        <td>销售额小幅下滑阈值（%），触发黄色 Y1</td>
                     </tr>
                     <tr>
                         <td><span class="field-name">g1Threshold</span></td>
                         <td><span class="field-type">BigDecimal</span></td>
                         <td class="tag-default">10</td>
-                        <td>销售额增长阈值（%），触发绿色提示</td>
+                        <td>销售额增长阈值（%），触发绿色 G1</td>
                     </tr>
                     <tr>
                         <td><span class="field-name">g2Threshold</span></td>
                         <td><span class="field-type">BigDecimal</span></td>
                         <td class="tag-default">40</td>
-                        <td>上涨链接占比阈值（%），触发绿色提示</td>
+                        <td>上涨链接占比阈值（%），触发绿色 G2</td>
                     </tr>
                 </tbody>
             </table>
@@ -398,23 +398,24 @@
                 <div class="rule-card red">
                     <h3>🔴 红色预警 · 需立即关注</h3>
                     <ul>
-                        <li><strong>销售额大幅下滑预警</strong><br>销售额变化为负，且下滑幅度 ≥ r1Threshold</li>
-                        <li><strong>大量链接滞销预警</strong><br>今日未出单链接占比 ≥ r2Threshold</li>
+                        <li><strong>R1 销售额大幅下滑</strong><br>当天销售额环比昨日下降幅度 ≥ r1Threshold</li>
+                        <li><strong>R2 大量链接下跌</strong><br>当天下跌链接数 ≥ 当天总链接数 × r2Threshold%</li>
+                        <li><strong>R3 大量链接未出单</strong><br>当天未出单链接数 ≥ 当天总链接数 × r3Threshold%</li>
                     </ul>
                 </div>
                 <div class="rule-card yellow">
                     <h3>🟡 黄色预警 · 值得注意</h3>
                     <ul>
-                        <li><strong>销售额下滑关注</strong><br>销售额变化为负，下滑幅度 ≥ y1Threshold 且 &lt; r1Threshold</li>
-                        <li><strong>链接下跌趋势明显</strong><br>今日下跌链接数 &gt; 今日上涨链接数 × y2Ratio</li>
-                        <li><strong>存在滞销链接</strong><br>今日未出单链接数 ≥ 1 且未达红色阈值</li>
+                        <li><strong>Y1 销售额小幅下滑</strong><br>下降幅度 ≥ y1Threshold 且 &lt; r1Threshold</li>
+                        <li><strong>Y2 部分链接下跌</strong><br>未出单链接占比 &lt; r2Threshold（与 R2 互斥）</li>
+                        <li><strong>Y3 部分链接未出单</strong><br>未出单链接占比 &lt; r3Threshold（与 R3 互斥）</li>
                     </ul>
                 </div>
                 <div class="rule-card green">
                     <h3>🟢 绿色提示 · 运营亮点</h3>
                     <ul>
-                        <li><strong>销售额稳步增长</strong><br>销售额变化 ≥ g1Threshold</li>
-                        <li><strong>多链接表现亮眼</strong><br>今日上涨链接占比 ≥ g2Threshold</li>
+                        <li><strong>G1 销售额稳步增长</strong><br>当天销售额相较昨日增长幅度 ≥ g1Threshold</li>
+                        <li><strong>G2 上涨链接占比亮眼</strong><br>当天上涨链接数占当天总链接数比例 ≥ g2Threshold</li>
                     </ul>
                 </div>
             </div>
@@ -433,18 +434,17 @@
   "message": "success",
   "data": {
     "诊断结论": {
-      "立即关注": ["销售额暴跌", "大量链接滞销"],
-      "值得注意": ["销售额小幅下滑", "下跌链接偏多"],
-      "运营亮点": ["销售额增长", "爆款涌现"]
+      "立即关注": ["销售额大幅下滑"],
+      "值得注意": ["销售额小幅下滑"],
+      "运营亮点": ["上涨链接占比亮眼"]
     },
     "运营诊断": {
-      "核心结论": ["✅ 当天销售额...", "..."],
-      "业务本质": ["..."],
-      "多维度评估": ["..."],
-      "亮点": ["✅ 销售额增长：当天销售额较昨日上涨..."],
-      "风险预警": ["⚠️ 销售额暴跌预警：当天销售额较昨日下跌..."],
-      "运营建议": ["1. 优先处理...", "2. 重点跟进...", "3. ..."]
-    }
+      "整体表现": ["今日销售额 8500.00 元，较昨日下跌 16.67%..."],
+      "链接结构分析": ["上涨 8 个，下跌 22 个，未出单 30 个..."],
+      "异常逻辑判断": ["触发预警规则，需关注异常链接..."],
+      "运营建议": ["✅ 优先排查销售额变化原因..."]
+    },
+    "完整模型返回": "🔴 **需立即关注：** 销售额大幅下滑\n① 整体表现：今日销售额 8500.00 元..."
   }
 }</code></pre>
             </div>
@@ -461,12 +461,11 @@
                         <tr><td><span class="field-name">data.诊断结论.立即关注</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>红色预警规则名称列表</td></tr>
                         <tr><td><span class="field-name">data.诊断结论.值得注意</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>黄色预警规则名称列表</td></tr>
                         <tr><td><span class="field-name">data.诊断结论.运营亮点</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>绿色提示规则名称列表</td></tr>
-                        <tr><td><span class="field-name">data.运营诊断.核心结论</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>3-5 条核心结论</td></tr>
-                        <tr><td><span class="field-name">data.运营诊断.业务本质</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>2-3 条业务本质解读</td></tr>
-                        <tr><td><span class="field-name">data.运营诊断.多维度评估</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>增长质量、商品结构、SKU 健康度</td></tr>
-                        <tr><td><span class="field-name">data.运营诊断.亮点</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>2-4 条运营亮点</td></tr>
-                        <tr><td><span class="field-name">data.运营诊断.风险预警</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>2-4 条风险预警</td></tr>
-                        <tr><td><span class="field-name">data.运营诊断.运营建议</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>3-5 条分优先级运营建议</td></tr>
+                        <tr><td><span class="field-name">data.运营诊断.整体表现</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>① 整体表现：销售额、订单量、客单价分析及行情判断</td></tr>
+                        <tr><td><span class="field-name">data.运营诊断.链接结构分析</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>② 链接结构分析：涨跌/未出单数量及占比，链接健康度</td></tr>
+                        <tr><td><span class="field-name">data.运营诊断.异常逻辑判断</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>③ 异常逻辑判断：个别链接问题或整体性下跌判断</td></tr>
+                        <tr><td><span class="field-name">data.运营诊断.运营建议</span></td><td><span class="field-type">List&lt;String&gt;</span></td><td>④ 运营建议：可落地的实操动作，分优先级</td></tr>
+                        <tr><td><span class="field-name">data.完整模型返回</span></td><td><span class="field-type">String</span></td><td>AI 完整返回的原始文本（诊断结论 + 运营诊断正文）</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -508,42 +507,44 @@
         <div class="section-title"><span class="icon">📨</span> 响应示例</div>
         <div class="section-body">
             <pre><code>{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "诊断结论": {
-      "立即关注": ["销售额暴跌"],
-      "值得注意": ["下跌链接偏多"],
-      "运营亮点": []
-    },
-    "运营诊断": {
-      "核心结论": [
-        "✅ 当天销售额 8500.00 元，较昨日下跌 16.67%",
-        "✅ 当天订单量 320 单，较昨日减少 90 单",
-        "⚠️ 今日下跌链接 22 条，是上涨链接的 2.75 倍"
-      ],
-      "业务本质": [
-        "当前销售额和订单量均呈下滑趋势",
-        "今日上涨链接 8 条，下跌链接 22 条，链接表现分化明显",
-        "今日未出单链接 30 条，占比较高"
-      ],
-      "多维度评估": [
-        "增长质量：销售额增速为 -16.67%，订单量同步下降",
-        "商品结构：上涨链接占比 13.3%，下跌链接占比 36.7%",
-        "SKU 健康度：未出单 SKU 占比 50.0%"
-      ],
-      "亮点": ["当前未触发明显运营亮点规则"],
-      "风险预警": [
-        "销售额大幅下滑预警：下滑幅度达 16.67%，超过阈值 20% 以内需关注",
-        "链接下跌趋势明显：下跌链接 22 条远超上涨链接 8 条"
-      ],
-      "运营建议": [
-        "1. 优先处理销售额下滑与未出单链接占比较高的问题",
-        "2. 重点跟进下跌链接和未出单链接，及时调整 listing、价格和投放策略",
-        "3. 对已表现较好的上涨链接，继续承接流量，避免结构继续失衡"
-      ]
-    }
-  }
+    "code": 200,
+    "message": "success",
+    "data": {
+        "诊断结论": {
+            "立即关注": [
+                "大量链接下跌"
+            ],
+            "值得注意": [
+                "销售额小幅下滑",
+                "部分链接未出单"
+            ],
+            "运营亮点": []
+        },
+        "运营诊断": {
+            "整体表现": [
+                "今日销售额7800元，较昨日8860元下滑11.96%，触发“销售额小幅下滑”。订单量从48单降至45单。昨日客单价184.58元，今日173.33元，客单价仅微降11元，排除主动降价因素。单量与客单价双降，确认为真实流量与转化缩水。结合自定义规则，当前预警等级为\uD83D\uDD34高风险（需立即关注大量链接下跌）。"
+            ],
+            "链接结构分析": [
+                "| 状态 | 数量 | 占比 |",
+                "|---|---|---|",
+                "| 上涨 | 50 | 35.7% |",
+                "| 下跌 | 55 | 39.3%  |",
+                "| 平稳 | 0 | 0% |",
+                "| 未出单 | 35 | 25.0% |",
+                "下跌链接占比39.3%突破30%红线。未出单链接由昨日31个增至35个，新增4个哑火链接。近四成链接下滑且超四分之一零单，店铺腰部支撑力减弱，链接健康度承压。"
+            ],
+            "异常逻辑判断": [
+                "下跌链接（55个）多于上涨链接（50个），且零单池扩大，属店铺整体性普跌，非个别ASIN异常。底层逻辑偏向大盘流量收缩或类目内卷。需优先排查：竞品低价/秒杀冲击、核心词自然排名集体掉页、广告曝光骤降、链接突发差评/变体违规、或类目季节性转淡。"
+            ],
+            "运营建议": [
+                "弱势行情忌大调广告或盲目降价，以排查维稳为主。",
+                "P1 平台排查：核对前台Buy Box是否丢失，查核心词自然位是否集体下滑，确认头部竞品是否开启大额Coupon或秒杀吸血。",
+                "P2 店铺维稳：针对新增4个哑火链接核查库存状态与广告预算是否触顶；对55个下跌链接微调竞价（±5%）测试流量弹性，保留转化词，暂停高ACOS无效词。",
+                "P3 观察策略：维持现有价格体系，重点监控明日单量回升情况，若连续3日下跌再考虑优化主图或申报轻量促销。"
+            ]
+        },
+        "完整模型返回": "🔴 **需立即关注：** 大量链接下跌\n🟡 **值得关注：** 销售额小幅下滑，部分链接未出单\n① 整体表现：今日销售额7800元，较昨日8860元下滑11.96%，触发“销售额小幅下滑”。订单量从48单降至45单。昨日客单价184.58元，今日173.33元，客单价仅微降11元，排除主动降价因素。单量与客单价双降，确认为真实流量与转化缩水。结合自定义规则，当前预警等级为🔴高风险（需立即关注大量链接下跌）。\n\n② 链接结构分析：\n| 状态 | 数量 | 占比 |\n|---|---|---|\n| 上涨 | 50 | 35.7% |\n| 下跌 | 55 | 39.3% ⚠️ |\n| 平稳 | 0 | 0% |\n| 未出单 | 35 | 25.0% |\n⚠️下跌链接占比39.3%突破30%红线。未出单链接由昨日31个增至35个，新增4个哑火链接。近四成链接下滑且超四分之一零单，店铺腰部支撑力减弱，链接健康度承压。\n\n③ 异常逻辑判断：下跌链接（55个）多于上涨链接（50个），且零单池扩大，属店铺整体性普跌，非个别ASIN异常。⚠️底层逻辑偏向大盘流量收缩或类目内卷。需优先排查：竞品低价/秒杀冲击、核心词自然排名集体掉页、广告曝光骤降、链接突发差评/变体违规、或类目季节性转淡。\n\n④ 运营建议：弱势行情忌大调广告或盲目降价，以排查维稳为主。\n✅ P1 平台排查：核对前台Buy Box是否丢失，查核心词自然位是否集体下滑，确认头部竞品是否开启大额Coupon或秒杀吸血。\n✅ P2 店铺维稳：针对新增4个哑火链接核查库存状态与广告预算是否触顶；对55个下跌链接微调竞价（±5%）测试流量弹性，保留转化词，暂停高ACOS无效词。\n✅ P3 观察策略：维持现有价格体系，重点监控明日单量回升情况，若连续3日下跌再考虑优化主图或申报轻量促销。"
+   }
 }</code></pre>
         </div>
     </div>
@@ -563,11 +564,11 @@
                 </div>
                 <div class="flow-step">
                     <div class="step-num">3</div>
-                    <div class="step-text">AI 生成运营诊断</div>
+                    <div class="step-text">AI 生成运营诊断<br>①→②→③→④</div>
                 </div>
                 <div class="flow-step">
                     <div class="step-num">4</div>
-                    <div class="step-text">解析结构化文本<br>填充返回结果</div>
+                    <div class="step-text">解析编号结构化文本<br>①②③④ 填充结果</div>
                 </div>
                 <div class="flow-step">
                     <div class="step-num">5</div>

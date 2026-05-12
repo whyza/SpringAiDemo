@@ -258,8 +258,8 @@ body {
           <rect x="9" y="9" width="6" height="6" rx="1.5" fill="white" opacity="0.3"/>
         </svg>
       </div>
-      <div class="logo-name">ERP 管理平台</div>
-      <div class="logo-sub">跨境电商运营系统</div>
+      <div class="logo-name">亚马逊运营平台</div>
+      <div class="logo-sub">AI 智能诊断系统</div>
     </div>
     <div class="nav-section">
       <div class="nav-label">运营</div>
@@ -358,7 +358,7 @@ body {
           <div class="rg-header red">
             <div class="rg-dot red"></div>
             红色预警：立即关注
-            <span class="rg-badge">2 条</span>
+            <span class="rg-badge">3 条</span>
           </div>
           <div class="rule-row">
             <div><div class="rr-id">R1</div><div class="rr-name">销售额大幅下滑</div><div class="rr-note">最高优先级</div></div>
@@ -373,12 +373,24 @@ body {
             </div>
           </div>
           <div class="rule-row">
-            <div><div class="rr-id">R2</div><div class="rr-name">大量链接未出单</div><div class="rr-note">最高优先级</div></div>
-            <div class="rr-cond">今日未出单链接数占今日总链接数的比例达到阈值。</div>
+            <div><div class="rr-id">R2</div><div class="rr-name">大量链接下跌</div><div class="rr-note">最高优先级</div></div>
+            <div class="rr-cond">当天下跌链接数占当天总链接数的比例达到阈值。</div>
             <div class="rr-ctrl">
               <div class="ctrl-row">
                 <span class="ctrl-label">占比 ≥</span>
                 <input class="ctrl-input" type="number" id="r2Threshold" value="30" min="1" max="99">
+                <span class="ctrl-unit">%</span>
+              </div>
+              <span class="ctrl-default">默认 30%</span>
+            </div>
+          </div>
+          <div class="rule-row">
+            <div><div class="rr-id">R3</div><div class="rr-name">大量链接未出单</div><div class="rr-note">最高优先级</div></div>
+            <div class="rr-cond">当天未出单链接数占当天总链接数的比例达到阈值。</div>
+            <div class="rr-ctrl">
+              <div class="ctrl-row">
+                <span class="ctrl-label">占比 ≥</span>
+                <input class="ctrl-input" type="number" id="r3Threshold" value="30" min="1" max="99">
                 <span class="ctrl-unit">%</span>
               </div>
               <span class="ctrl-default">默认 30%</span>
@@ -393,7 +405,7 @@ body {
             <span class="rg-badge">3 条</span>
           </div>
           <div class="rule-row">
-            <div><div class="rr-id">Y1</div><div class="rr-name">销售额下滑关注</div></div>
+            <div><div class="rr-id">Y1</div><div class="rr-name">销售额小幅下滑</div></div>
             <div class="rr-cond">当天销售额下降幅度达到黄色阈值，但未达到红色预警阈值。</div>
             <div class="rr-ctrl">
               <div class="ctrl-row">
@@ -405,20 +417,15 @@ body {
             </div>
           </div>
           <div class="rule-row">
-            <div><div class="rr-id">Y2</div><div class="rr-name">下跌链接趋势明显</div></div>
-            <div class="rr-cond">今日下跌链接数大于今日上涨链接数乘以比例阈值。</div>
+            <div><div class="rr-id">Y2</div><div class="rr-name">部分链接下跌</div></div>
+            <div class="rr-cond">当天下跌链接数占比未达 R2 阈值，与 R2 互斥自动联动。</div>
             <div class="rr-ctrl">
-              <div class="ctrl-row">
-                <span class="ctrl-label">比例 ></span>
-                <input class="ctrl-input" type="number" id="y2Ratio" value="2" min="1" max="10">
-                <span class="ctrl-unit">倍</span>
-              </div>
-              <span class="ctrl-default">默认 2 倍</span>
+              <span class="ctrl-default">自动判断</span>
             </div>
           </div>
           <div class="rule-row">
-            <div><div class="rr-id">Y3</div><div class="rr-name">存在未出单链接</div></div>
-            <div class="rr-cond">今日存在未出单链接，但未达到红色未出单占比阈值。</div>
+            <div><div class="rr-id">Y3</div><div class="rr-name">部分链接未出单</div></div>
+            <div class="rr-cond">当天未出单链接占比未达 R3 阈值，与 R3 互斥自动联动。</div>
             <div class="rr-ctrl">
               <span class="ctrl-default">自动判断</span>
             </div>
@@ -592,8 +599,8 @@ function loadScenario(key) {
 function resetDefaults() {
   document.getElementById('r1Threshold').value = 20;
   document.getElementById('r2Threshold').value = 30;
+  document.getElementById('r3Threshold').value = 30;
   document.getElementById('y1Threshold').value = 10;
-  document.getElementById('y2Ratio').value = 2;
   document.getElementById('g1Threshold').value = 10;
   document.getElementById('g2Threshold').value = 40;
   showToast('已恢复默认规则阈值');
@@ -622,8 +629,8 @@ async function analyze() {
     yesterdayNoOrderLinks: +document.getElementById('yesterdayNoOrderLinks').value || 0,
     r1Threshold: +document.getElementById('r1Threshold').value || 20,
     r2Threshold: +document.getElementById('r2Threshold').value || 30,
+    r3Threshold: +document.getElementById('r3Threshold').value || 30,
     y1Threshold: +document.getElementById('y1Threshold').value || 10,
-    y2Ratio: +document.getElementById('y2Ratio').value || 2,
     g1Threshold: +document.getElementById('g1Threshold').value || 10,
     g2Threshold: +document.getElementById('g2Threshold').value || 40
   };
@@ -685,12 +692,10 @@ function formatOperationDiagnosis(operationDiagnosis) {
     return '运营诊断未返回';
   }
   const sections = [
-    ['核心结论', operationDiagnosis['核心结论']],
-    ['业务本质', operationDiagnosis['业务本质']],
-    ['多维度评估', operationDiagnosis['多维度评估']],
-    ['亮点', operationDiagnosis['亮点']],
-    ['风险预警', operationDiagnosis['风险预警']],
-    ['运营建议', operationDiagnosis['运营建议']]
+    ['① 整体表现', operationDiagnosis['整体表现']],
+    ['② 链接结构分析', operationDiagnosis['链接结构分析']],
+    ['③ 异常逻辑判断', operationDiagnosis['异常逻辑判断']],
+    ['④ 运营建议', operationDiagnosis['运营建议']]
   ];
   return sections
     .filter(([, items]) => Array.isArray(items) && items.length)
@@ -711,26 +716,37 @@ function renderLocalFallback(body) {
 
   const triggered = { redAlerts: [], yellowAlerts: [], greenAlerts: [] };
 
+  // R1: 销售额大幅下滑
   if (revenueChange < 0 && Math.abs(revenueChange) >= body.r1Threshold) {
-    triggered.redAlerts.push('销售额大幅下滑预警');
+    triggered.redAlerts.push('销售额大幅下滑');
   }
-  if (totalLinks > 0 && body.todayNoOrderLinks / totalLinks * 100 >= body.r2Threshold) {
-    triggered.redAlerts.push('大量链接未出单预警');
+  // R2: 大量链接下跌
+  if (totalLinks > 0 && (body.todayFallingLinks || 0) / totalLinks * 100 >= body.r2Threshold) {
+    triggered.redAlerts.push('大量链接下跌');
   }
+  // R3: 大量链接未出单
+  if (totalLinks > 0 && (body.todayNoOrderLinks || 0) / totalLinks * 100 >= body.r3Threshold) {
+    triggered.redAlerts.push('大量链接未出单');
+  }
+  // Y1: 销售额小幅下滑
   if (revenueChange < 0 && Math.abs(revenueChange) >= body.y1Threshold && Math.abs(revenueChange) < body.r1Threshold) {
-    triggered.yellowAlerts.push('销售额下滑值得关注');
+    triggered.yellowAlerts.push('销售额小幅下滑');
   }
-  if (body.todayFallingLinks > body.todayRisingLinks * body.y2Ratio) {
-    triggered.yellowAlerts.push('下跌链接明显多于上涨链接');
+  // Y2: 部分链接下跌（与 R2 互斥）
+  if (totalLinks > 0 && (body.todayFallingLinks || 0) > 0 && (body.todayFallingLinks || 0) / totalLinks * 100 < body.r2Threshold) {
+    triggered.yellowAlerts.push('部分链接下跌');
   }
-  if (body.todayNoOrderLinks >= 1 && totalLinks > 0 && body.todayNoOrderLinks / totalLinks * 100 < body.r2Threshold) {
-    triggered.yellowAlerts.push('存在未出单链接');
+  // Y3: 部分链接未出单（与 R3 互斥）
+  if (totalLinks > 0 && (body.todayNoOrderLinks || 0) > 0 && (body.todayNoOrderLinks || 0) / totalLinks * 100 < body.r3Threshold) {
+    triggered.yellowAlerts.push('部分链接未出单');
   }
+  // G1: 销售额稳步增长
   if (revenueChange >= body.g1Threshold) {
     triggered.greenAlerts.push('销售额稳步增长');
   }
-  if (totalLinks > 0 && body.todayRisingLinks / totalLinks * 100 >= body.g2Threshold) {
-    triggered.greenAlerts.push('上涨链接占比表现亮眼');
+  // G2: 上涨链接占比亮眼
+  if (totalLinks > 0 && (body.todayRisingLinks || 0) / totalLinks * 100 >= body.g2Threshold) {
+    triggered.greenAlerts.push('上涨链接占比亮眼');
   }
 
   const fallbackData = {
@@ -740,30 +756,24 @@ function renderLocalFallback(body) {
       '运营亮点': triggered.greenAlerts.length ? triggered.greenAlerts : (!triggered.redAlerts.length && !triggered.yellowAlerts.length ? ['无明显异常'] : [])
     },
     '运营诊断': {
-      '核心结论': [
+      '整体表现': [
         `当天销售额 ${body.todayRevenue} 元，昨日销售额 ${body.yesterdayRevenue} 元，销售额变化 ${formatPercentTrend(revenueChange)}。`,
         `当天订单量 ${body.todayOrders} 单，昨日订单量 ${body.yesterdayOrders} 单。`,
         `今日总链接数 ${totalLinks}，昨日总链接数 ${yesterdayTotalLinks}。`
       ],
-      '业务本质': [
-        '当前经营表现主要由销售额、订单量和链接结构共同驱动。',
-        `今日上涨链接 ${body.todayRisingLinks}，今日下跌链接 ${body.todayFallingLinks}，说明链接表现存在分化。`,
-        `今日未出单链接 ${body.todayNoOrderLinks}，直接反映低效链接压力。`
+      '链接结构分析': [
+        `上涨 ${body.todayRisingLinks} 个，下跌 ${body.todayFallingLinks} 个，未出单 ${body.todayNoOrderLinks} 个。`,
+        `昨日未出单 ${body.yesterdayNoOrderLinks} 个，未出单变化 ${body.todayNoOrderLinks - body.yesterdayNoOrderLinks} 个。`
       ],
-      '多维度评估': [
-        `销售维度：销售额变化 ${formatPercentTrend(revenueChange)}。`,
-        `订单维度：当天订单量 ${body.todayOrders} 单，昨日订单量 ${body.yesterdayOrders} 单。`,
-        `链接维度：今日上涨 ${body.todayRisingLinks}，今日下跌 ${body.todayFallingLinks}，今日未出单 ${body.todayNoOrderLinks}。`,
-        `对比维度：昨日上涨 ${body.yesterdayRisingLinks}，昨日下跌 ${body.yesterdayFallingLinks}，昨日未出单 ${body.yesterdayNoOrderLinks}。`
+      '异常逻辑判断': [
+        (triggered.redAlerts.length || triggered.yellowAlerts.length)
+          ? `触发预警规则，需关注异常链接。${triggered.redAlerts.length ? '⚠️ 存在红色预警，需立即排查。' : ''}${triggered.yellowAlerts.length ? '⚠️ 存在黄色预警，建议关注。' : ''}`
+          : '暂未发现明显异常，链接结构相对稳定。'
       ],
-      '亮点': triggered.greenAlerts.length ? triggered.greenAlerts : ['当前未触发明显运营亮点规则。'],
-      '风险预警': triggered.redAlerts.concat(triggered.yellowAlerts).length
-        ? triggered.redAlerts.concat(triggered.yellowAlerts)
-        : ['当前未触发明显风险预警规则。'],
       '运营建议': [
-        '优先处理销售额下滑与未出单链接占比较高的问题。',
-        '重点跟进下跌链接和未出单链接，及时调整 listing、价格和投放策略。',
-        '对已表现较好的上涨链接，继续承接流量，避免结构继续失衡。'
+        '优先排查销售额变化原因，检查客单价是否稳定。弱势行情以排查为主，避免大幅改动。',
+        '重点跟进下跌链接和未出单链接，及时优化 listing、广告投放和竞价策略，区分平台原因还是店铺原因。',
+        '对已表现较好的上涨链接，继续承接流量，维持广告预算，避免因结构失衡拖累整体表现。'
       ]
     }
   };

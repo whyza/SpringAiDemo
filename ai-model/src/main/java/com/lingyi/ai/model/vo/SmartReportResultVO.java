@@ -53,20 +53,14 @@ public class SmartReportResultVO {
     @Data
     public static class OperationDiagnosisVO {
 
-        @JsonProperty("核心结论")
-        private List<String> coreConclusions;
+        @JsonProperty("整体表现")
+        private List<String> overallPerformance;
 
-        @JsonProperty("业务本质")
-        private List<String> businessEssence;
+        @JsonProperty("链接结构分析")
+        private List<String> linkStructureAnalysis;
 
-        @JsonProperty("多维度评估")
-        private List<String> multiDimensionalEvaluations;
-
-        @JsonProperty("亮点")
-        private List<String> highlights;
-
-        @JsonProperty("风险预警")
-        private List<String> riskWarnings;
+        @JsonProperty("异常逻辑判断")
+        private List<String> anomalyLogicJudgment;
 
         @JsonProperty("运营建议")
         private List<String> operationSuggestions;

@@ -43,6 +43,7 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         SmartReportResultVO result = new SmartReportResultVO();
         result.setDiagnosisConclusionText(diagnosisConclusionText);
         result.setOperationDiagnosisText(operationDiagnosisText);
+        result.setFullModelResponse(diagnosisConclusionText + "\n" + operationDiagnosisText);
 
         SmartReportResultVO.DiagnosisConclusionVO diagnosisConclusion = new SmartReportResultVO.DiagnosisConclusionVO();
         diagnosisConclusion.setRedAlerts(structuredDiagnosis.getRedAlerts());

@@ -124,16 +124,16 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
 
     private String buildDiagnosisConclusionPrompt(SmartReportRequestDTO req) {
         int todayTotalLinks = calculateTodayTotalLinks(req);
-        BigDecimal revenueChange = calculateRevenueChange(req);
         return String.format("""
                 请基于以下数据和规则判断诊断结论。
                 ## 今日数据汇总
                 昨日销售额：%s 元
                 今日销售额：%s 元
-                销售额变化：%s
                 昨日订单量：%d
                 今日订单量：%d
+                昨天销量上涨链接数：%d
                 当天销量上涨链接数：%d
+                昨天销量下跌链接数：%d
                 当天销量下跌链接数：%d
                 当天总链接数：%d
                 当天未出单链接数：%d
@@ -141,23 +141,24 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
 
                 ## 客户自定义规则
                 红色规则：
-                1. 销售额大幅下滑：当销售额变化为负，且下滑幅度 >= %s%% 时命中。
-                2. 大量链接下跌：当今天下跌链接数占比 >= %s%% 时命中。
-                3. 大量链接未出单：当今天未出单链接占比 >= %s%% 时命中。
+                1. 销售额大幅下滑：当天销售额环比昨日下降幅度 >= %s%% 时命中。
+                2. 大量链接下跌：当天下跌链接数 ≥ 当天总链接数 × %s%% 时命中。
+                3. 大量链接未出单：当天未出单链接数 ≥ 当天总链接数 × %s%% 时命中。
                 黄色规则：
-                1. 销售额小幅下滑：当销售额变化为负，下滑幅度 >= %s%% 且 < %s%% 时命中。
-                2. 部分链接下跌：当今天存在下跌链接，且下跌链接占比未达红色阈值时命中。
-                3. 部分链接未出单：当今天存在未出单链接，且未出单占比未达红色阈值时命中。
+                1. 销售额小幅下滑：当天销售额环比昨日下降幅度 >= %s%%，但未达到 %s%% 时命中。
+                2. 部分链接下跌：当天存在下跌链接，且下跌链接占比未达红色阈值时命中。（与大量链接下跌互斥）
+                3. 部分链接未出单：当天存在未出单链接，且未出单占比未达红色阈值时命中。（与大量链接未出单互斥）
                 绿色规则：
-                1. 销售额稳步增长：当销售额变化 >= %s%% 时命中。
-                2. 上涨链接占比亮眼：当今天上涨链接占比 >= %s%% 时命中。
+                1. 销售额稳步增长：当天销售额相较昨日增长幅度 >= %s%% 时命中。
+                2. 上涨链接占比亮眼：当天上涨链接数 ≥ 当天总链接数 × %s%% 时命中。
                 """,
                 formatAmount(req.getYesterdayRevenue()),
                 formatAmount(req.getTodayRevenue()),
-                formatPercentTrend(revenueChange),
                 safeInt(req.getYesterdayOrders()),
                 safeInt(req.getTodayOrders()),
+                safeInt(req.getYesterdayRisingLinks()),
                 safeInt(req.getTodayRisingLinks()),
+                safeInt(req.getYesterdayFallingLinks()),
                 safeInt(req.getTodayFallingLinks()),
                 todayTotalLinks,
                 safeInt(req.getTodayNoOrderLinks()),
@@ -174,14 +175,15 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
 
     private String buildOperationDiagnosisPrompt(SmartReportRequestDTO req, String diagnosisConclusion) {
         int todayTotalLinks = calculateTodayTotalLinks(req);
-        BigDecimal revenueChange = calculateRevenueChange(req);
         return String.format("""
                 ## 今日数据汇总
                 昨日销售额：%s 元
                 今日销售额：%s 元
                 昨日订单量：%d
                 今日订单量：%d
+                昨天销量上涨链接数：%d
                 当天销量上涨链接数：%d
+                昨天销量下跌链接数：%d
                 当天销量下跌链接数：%d
                 当天总链接数：%d
                 当天未出单链接数：%d
@@ -192,6 +194,8 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 - 大量链接下跌——当天下跌链接数占当天总链接数的比例达到 %s%%
                 - 大量链接未出单——当天未出单链接占总链接数的比例达到 %s%%
                 - 销售额小幅下滑——当天销售额下降幅度达到 %s%%，但未达到 %s%%
+                - 部分链接下跌——当天未出单链接占当天总链接数的比例未达到 %s%%
+                - 部分链接未出单——当天未出单链接占总链接数的比例未达到 %s%%
                 - 销售额稳步增长——当天销售额相较昨日增长幅度达到 %s%%
                 - 上涨链接占比亮眼——当天上涨链接数占当天总链接数比例达到 %s%%
 
@@ -204,7 +208,9 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 formatAmount(req.getTodayRevenue()),
                 safeInt(req.getYesterdayOrders()),
                 safeInt(req.getTodayOrders()),
+                safeInt(req.getYesterdayRisingLinks()),
                 safeInt(req.getTodayRisingLinks()),
+                safeInt(req.getYesterdayFallingLinks()),
                 safeInt(req.getTodayFallingLinks()),
                 todayTotalLinks,
                 safeInt(req.getTodayNoOrderLinks()),
@@ -214,6 +220,8 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 formatAmount(req.getR3Threshold()),
                 formatAmount(req.getY1Threshold()),
                 formatAmount(req.getR1Threshold()),
+                formatAmount(req.getR2Threshold()),
+                formatAmount(req.getR3Threshold()),
                 formatAmount(req.getG1Threshold()),
                 formatAmount(req.getG2Threshold()),
                 diagnosisConclusion
@@ -400,10 +408,10 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
             result.getYellowAlerts().add("销售额小幅下滑");
         }
 
-        // Y2: 部分链接下跌（存在下跌链接，但占比未达 R2 阈值，与 R2 互斥）
+        // Y2: 部分链接下跌（当天未出单链接占比未达 R2 阈值，与 R2 互斥）
         if (todayTotalLinks > 0) {
-            BigDecimal fallingRatio = calculateLinkRatio(req.getTodayFallingLinks(), todayTotalLinks);
-            if (safeInt(req.getTodayFallingLinks()) > 0 && fallingRatio.compareTo(req.getR2Threshold()) < 0) {
+            BigDecimal noOrderRatio = calculateLinkRatio(req.getTodayNoOrderLinks(), todayTotalLinks);
+            if (safeInt(req.getTodayNoOrderLinks()) > 0 && noOrderRatio.compareTo(req.getR2Threshold()) < 0) {
                 result.getYellowAlerts().add("部分链接下跌");
             }
         }

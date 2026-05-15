@@ -188,7 +188,7 @@ body {
 .data-value.down { color: var(--red); }
 .data-value.warn { color: var(--amber); }
 
-.result-area { }
+.result-area { position: relative; }
 .result-header {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
@@ -319,38 +319,31 @@ body {
 .toast.error { background: var(--red); }
 
 .blur-active .split-left {
-  filter: blur(5px) brightness(0.97);
+  filter: blur(2px) brightness(0.98);
   pointer-events: none;
   transition: filter 0.4s ease;
-  position: relative;
+  user-select: none;
 }
-.blur-active .split-left::after {
+
+.analyze-progress-bar {
+  position: absolute; bottom: -10px; left: 0; right: 0; height: 3px;
+  background: var(--border);
+  z-index: 20; overflow: hidden; display: none;
+  border-radius: 0;
+}
+.analyze-progress-bar.active { display: block; }
+.analyze-progress-bar::after {
   content: '';
-  position: absolute; inset: 0;
-  background: rgba(0,0,0,0.03);
-  pointer-events: none;
+  position: absolute; top: 0; left: -40%; width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, var(--blue), transparent);
+  animation: barMove 1.2s ease-in-out infinite;
 }
-.blur-active .split-right {
-  position: relative;
+@keyframes barMove {
+  0% { left: -40%; }
+  100% { left: 120%; }
 }
-.blur-active .split-right::before {
-  content: '⟳ 分析中';
-  position: absolute; top: 40%; left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 15px; font-weight: 600;
-  color: var(--text);
-  background: var(--surface);
-  padding: 12px 28px;
-  border-radius: var(--radius);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-  z-index: 5;
-  animation: loadingPulse 1.6s ease-in-out infinite;
-  letter-spacing: 0.02em;
-}
-@keyframes loadingPulse {
-  0%, 100% { opacity: 0.7; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
-  50% { opacity: 1; box-shadow: 0 4px 32px rgba(0,0,0,0.15); }
-}
+
+
 .split-right {
   transition: filter 0.3s ease;
 }
@@ -619,6 +612,7 @@ body {
       <div class="split-right">
 
       <div class="result-area" id="resultArea">
+        <div class="analyze-progress-bar" id="analyzeProgressBar"></div>
         <div class="result-header">
           <span class="result-title">分析结果</span>
           <span class="result-time" id="resultTime"></span>
@@ -881,7 +875,7 @@ async function analyze() {
   btn.disabled = true;
   btn.textContent = '分析中...';
   document.querySelector('.content').classList.add('blur-active');
-  showAnalyzeToast();
+  document.getElementById('analyzeProgressBar').classList.add('active');
 
   const mainEl = document.querySelector('.main');
   if (mainEl) mainEl.scrollTop = 0;
@@ -947,6 +941,7 @@ async function analyze() {
     btn.disabled = false;
     btn.textContent = '开始分析';
     document.querySelector('.content')?.classList.remove('blur-active');
+    document.getElementById('analyzeProgressBar')?.classList.remove('active');
   }
 }
 
@@ -1128,16 +1123,6 @@ function renderLocalFallback(rules) {
     }
   };
   renderResult(fallbackData);
-}
-
-function showAnalyzeToast() {
-  const t = document.getElementById('toast');
-  t.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite;margin-right:8px;">⟳</span> AI 智能分析已启动，正在生成诊断报告...';
-  t.className = 'toast show';
-  // 3秒后自动淡出
-  setTimeout(() => {
-    if (t.textContent.includes('已启动')) t.className = 'toast';
-  }, 3000);
 }
 
 function showToast(msg, isError) {

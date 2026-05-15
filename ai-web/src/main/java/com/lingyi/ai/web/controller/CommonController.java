@@ -19,6 +19,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
 
 import java.math.BigDecimal;
 
@@ -158,6 +161,38 @@ public class CommonController {
             log.error("智能报告分析失败", e);
             return Result.error("智能报告分析失败：" + e.getMessage());
         }
+    }
+
+    /**
+     * 智能报告分析（流式进度），通过 SSE 实时推送进度
+     */
+    @PostMapping("/smart-report/analyze-stream")
+    public SseEmitter analyzeSmartReportStream(@RequestBody(required = false) SmartReportRequestDTO request) {
+        SmartReportRequestDTO req = request != null ? request : new SmartReportRequestDTO();
+        log.info("收到智能报告流式分析请求，日期：{}", req.getReportDate());
+        SseEmitter emitter = new SseEmitter(120_000L);
+
+        Thread.ofVirtual().start(() -> {
+            try {
+                SmartReportResultVO result = smartReportEngineService.analyze(req, step -> {
+                    try {
+                        emitter.send(SseEmitter.event().name("progress").data(step));
+                    } catch (IOException e) {
+                        // client disconnected
+                    }
+                });
+                // 分析成功后自动保存配置并推送结果
+                emitter.send(SseEmitter.event().name("progress")
+                    .data("{\"step\":\"saving\",\"message\":\"正在保存分析配置到数据库...\"}"));
+                smartReportConfigService.saveConfig(toConfigDO(req));
+                emitter.send(SseEmitter.event().name("result").data(result));
+                emitter.complete();
+            } catch (Exception e) {
+                log.error("流式分析失败", e);
+                emitter.completeWithError(e);
+            }
+        });
+        return emitter;
     }
 
     /**

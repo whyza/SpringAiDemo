@@ -149,10 +149,14 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 5. 语气专业通俗，站在卖家视角，像资深运营在跟卖家沟通
                 6. 数据不足以支撑某部分分析时，直接跳过，不要硬写
                 7. 直接输出报告正文，不要加"根据提供的数据"、"基于以上数据"等开场白
+                8. **每个指标须附带简明计算结果**（另起一行展示），格式如：
+                   - "销售额降幅 32.10%（昨日 ¥8,100 → 今日 ¥5,500）"
+                   - "未出单占比 40.54%（未出单 75 / 总链接 185）"
+                   - "上涨链接占比 79.71%（上涨 110 / 总链接 138）"
 
                 ## 输出结构（严格按此顺序）
 
-                ① 整体表现：对比昨日今日销售额、订单降幅，精准计算客单价；通过客单价判断下滑是否为降价导致，直白说明是流量 / 转化真实缩水，结合自定义规则判定行情预警等级
+                ① 整体表现：对比昨日今日销售额、订单降幅，精准计算客单价；通过客单价判断下滑是否为降价导致，直白说明是流量 / 转化真实缩水，结合自定义规则判定行情预警等级。每个指标另起一行展示简明计算结果。
 
                 ② 链接结构分析：用极简表格展示上涨、下跌、平稳、未出单链接 + 数量 + 占比；标注风险警告，对比昨日、今日未出单链接差值，算出新增哑火链接数量，判断店铺链接健康度、产品支撑能力。风险项用 ⚠️ 标记。
 
@@ -187,18 +191,18 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 当天未出单链接数：%d
                 昨天未出单链接数：%d
 
-                ## 客户自定义规则
+                ## 客户自定义规则（阈值百分比均为绝对值，AI 需自行计算实际值判断是否命中）
                 红色规则：
-                1. 销售额大幅下滑：当天销售额环比昨日下降幅度 >= %s%% 时命中。
-                2. 大量链接下跌：当天下跌链接数 ≥ 当天总链接数 × %s%% 时命中。
-                3. 大量链接未出单：当天未出单链接数 ≥ 当天总链接数 × %s%% 时命中。
+                1. 销售额大幅下滑：销售额降幅 = (昨日销售额 - 当天销售额) ÷ 昨日销售额 × 100%%，该值 >= %s%% 时命中。
+                2. 大量链接下跌：下跌链接占比 = 当天下跌链接数 ÷ 当天总链接数 × 100%%，该值 >= %s%% 时命中。
+                3. 大量链接未出单：未出单链接占比 = 当天未出单链接数 ÷ 当天总链接数 × 100%%，该值 >= %s%% 时命中。
                 黄色规则：
-                1. 销售额小幅下滑：当天销售额环比昨日下降幅度 >= %s%%，但未达到 %s%% 时命中。
-                2. 部分链接下跌：当天存在下跌链接，且下跌链接占比未达红色阈值时命中。（与大量链接下跌互斥）
-                3. 部分链接未出单：当天存在未出单链接，且未出单占比未达红色阈值时命中。（与大量链接未出单互斥）
+                1. 销售额小幅下滑：销售额降幅 = (昨日销售额 - 当天销售额) ÷ 昨日销售额 × 100%%，该值 >= %s%% 且 < %s%% 时命中。
+                2. 部分链接下跌：下跌链接占比 = 当天下跌链接数 ÷ 当天总链接数 × 100%%，该值 > 0 且 < %s%% 时命中。（与大量链接下跌互斥）
+                3. 部分链接未出单：未出单链接占比 = 当天未出单链接数 ÷ 当天总链接数 × 100%%，该值 > 0 且 < %s%% 时命中。（与大量链接未出单互斥）
                 绿色规则：
-                1. 销售额稳步增长：当天销售额相较昨日增长幅度 >= %s%% 时命中。
-                2. 上涨链接占比亮眼：当天上涨链接数 ≥ 当天总链接数 × %s%% 时命中。
+                1. 销售额稳步增长：销售额增幅 = (当天销售额 - 昨日销售额) ÷ 昨日销售额 × 100%%，该值 >= %s%% 时命中。
+                2. 上涨链接占比亮眼：上涨链接占比 = 当天上涨链接数 ÷ 当天总链接数 × 100%%，该值 >= %s%% 时命中。
                 """,
                 formatAmount(req.getYesterdayRevenue()),
                 formatAmount(req.getTodayRevenue()),
@@ -216,6 +220,8 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 formatAmount(req.getR3Threshold()),
                 formatAmount(req.getY1Threshold()),
                 formatAmount(req.getR1Threshold()),
+                formatAmount(req.getR2Threshold()),
+                formatAmount(req.getR3Threshold()),
                 formatAmount(req.getG1Threshold()),
                 formatAmount(req.getG2Threshold())
         );
@@ -223,6 +229,39 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
 
     private String buildOperationDiagnosisPrompt(SmartReportRequestDTO req, String diagnosisConclusion) {
         int todayTotalLinks = calculateTodayTotalLinks(req);
+        // 预计算关键指标
+        BigDecimal yesterdayRev = req.getYesterdayRevenue();
+        BigDecimal todayRev = req.getTodayRevenue();
+        String revDropPct = "0.00";
+        String revRisePct = "0.00";
+        if (yesterdayRev != null && todayRev != null && yesterdayRev.compareTo(BigDecimal.ZERO) > 0) {
+            revDropPct = yesterdayRev.subtract(todayRev)
+                    .multiply(BigDecimal.valueOf(100))
+                    .divide(yesterdayRev, 2, RoundingMode.HALF_UP)
+                    .toString();
+            revRisePct = todayRev.subtract(yesterdayRev)
+                    .multiply(BigDecimal.valueOf(100))
+                    .divide(yesterdayRev, 2, RoundingMode.HALF_UP)
+                    .toString();
+        }
+        String fallingLinkPct = "0.00";
+        if (todayTotalLinks > 0 && req.getTodayFallingLinks() != null) {
+            fallingLinkPct = BigDecimal.valueOf(req.getTodayFallingLinks() * 100L)
+                    .divide(BigDecimal.valueOf(todayTotalLinks), 2, RoundingMode.HALF_UP)
+                    .toString();
+        }
+        String noOrderLinkPct = "0.00";
+        if (todayTotalLinks > 0 && req.getTodayNoOrderLinks() != null) {
+            noOrderLinkPct = BigDecimal.valueOf(req.getTodayNoOrderLinks() * 100L)
+                    .divide(BigDecimal.valueOf(todayTotalLinks), 2, RoundingMode.HALF_UP)
+                    .toString();
+        }
+        String risingLinkPct = "0.00";
+        if (todayTotalLinks > 0 && req.getTodayRisingLinks() != null) {
+            risingLinkPct = BigDecimal.valueOf(req.getTodayRisingLinks() * 100L)
+                    .divide(BigDecimal.valueOf(todayTotalLinks), 2, RoundingMode.HALF_UP)
+                    .toString();
+        }
         return String.format("""
                 ## 今日数据汇总
                 昨日销售额：%s 元
@@ -237,23 +276,30 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 当天未出单链接数：%d
                 昨天未出单链接数：%d
 
-                ## 客户自定义规则
-                - 销售额大幅下滑——当天销售额相较昨日下降幅度达到 %s%%
-                - 大量链接下跌——当天下跌链接数占当天总链接数的比例达到 %s%%
-                - 大量链接未出单——当天未出单链接占总链接数的比例达到 %s%%
-                - 销售额小幅下滑——当天销售额下降幅度达到 %s%%，但未达到 %s%%
-                - 部分链接下跌——当天未出单链接占当天总链接数的比例未达到 %s%%
-                - 部分链接未出单——当天未出单链接占总链接数的比例未达到 %s%%
-                - 销售额稳步增长——当天销售额相较昨日增长幅度达到 %s%%
-                - 上涨链接占比亮眼——当天上涨链接数占当天总链接数比例达到 %s%%
+                ## 预计算关键指标（供输出时直接引用）
+                - 销售额降幅 %s%%（昨日 %s → 今日 %s）
+                - 销售额增幅 %s%%（今日 %s → 昨日 %s）
+                - 当天下跌链接占比 %s%%（下跌 %d / 总链接 %d）
+                - 当天未出单链接占比 %s%%（未出单 %d / 总链接 %d）
+                - 当天上涨链接占比 %s%%（上涨 %d / 总链接 %d）
+
+                ## 客户自定义规则（阈值百分比均为绝对值）
+                - 销售额大幅下滑：值 >= %s%% 时触发
+                - 大量链接下跌：值 >= %s%% 时触发
+                - 大量链接未出单：值 >= %s%% 时触发
+                - 销售额小幅下滑：值 >= %s%% 且 < %s%% 时触发
+                - 部分链接下跌：值 > 0 且 < %s%% 时触发
+                - 部分链接未出单：值 > 0 且 < %s%% 时触发
+                - 销售额稳步增长：值 >= %s%% 时触发
+                - 上涨链接占比亮眼：值 >= %s%% 时触发
 
                 ## 诊断结论
                 %s
 
                 请基于以上数据和规则，输出完整的运营诊断正文。
                 """,
-                formatAmount(req.getYesterdayRevenue()),
-                formatAmount(req.getTodayRevenue()),
+                formatAmount(yesterdayRev),
+                formatAmount(todayRev),
                 safeInt(req.getYesterdayOrders()),
                 safeInt(req.getTodayOrders()),
                 safeInt(req.getYesterdayRisingLinks()),
@@ -263,6 +309,13 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 todayTotalLinks,
                 safeInt(req.getTodayNoOrderLinks()),
                 safeInt(req.getYesterdayNoOrderLinks()),
+                // 预计算指标
+                revDropPct, formatAmount(yesterdayRev), formatAmount(todayRev),
+                revRisePct, formatAmount(todayRev), formatAmount(yesterdayRev),
+                fallingLinkPct, safeInt(req.getTodayFallingLinks()), todayTotalLinks,
+                noOrderLinkPct, safeInt(req.getTodayNoOrderLinks()), todayTotalLinks,
+                risingLinkPct, safeInt(req.getTodayRisingLinks()), todayTotalLinks,
+                // 阈值
                 formatAmount(req.getR1Threshold()),
                 formatAmount(req.getR2Threshold()),
                 formatAmount(req.getR3Threshold()),

@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS `smart_report_config` (
+  `id`               BIGINT        NOT NULL AUTO_INCREMENT  COMMENT '主键ID',
+  `today_revenue`    DECIMAL(15,2)                          COMMENT '当天销售额',
+  `yesterday_revenue` DECIMAL(15,2)                         COMMENT '昨日销售额',
+  `today_orders`     INT                                    COMMENT '当天订单量',
+  `yesterday_orders` INT                                    COMMENT '昨日订单量',
+  `today_rising_links` INT                                  COMMENT '今日销量上涨链接数',
+  `yesterday_rising_links` INT                              COMMENT '昨日销量上涨链接数',
+  `today_falling_links` INT                                 COMMENT '今日销量下跌链接数',
+  `yesterday_falling_links` INT                             COMMENT '昨日销量下跌链接数',
+  `today_no_order_links` INT                                COMMENT '今日未出单链接数',
+  `yesterday_no_order_links` INT                            COMMENT '昨日未出单链接数',
+  `r1_threshold`     DECIMAL(5,2) DEFAULT 20.00             COMMENT 'R1: 销售额大幅下滑阈值(%)',
+  `r2_threshold`     DECIMAL(5,2) DEFAULT 30.00             COMMENT 'R2: 大量链接下跌阈值(%)',
+  `r3_threshold`     DECIMAL(5,2) DEFAULT 30.00             COMMENT 'R3: 大量链接未出单阈值(%)',
+  `y1_threshold`     DECIMAL(5,2) DEFAULT 10.00             COMMENT 'Y1: 销售额小幅下滑阈值(%)',
+  `g1_threshold`     DECIMAL(5,2) DEFAULT 10.00             COMMENT 'G1: 销售额增长阈值(%)',
+  `g2_threshold`     DECIMAL(5,2) DEFAULT 40.00             COMMENT 'G2: 上涨链接占比阈值(%)',
+  `create_time`      DATETIME     DEFAULT CURRENT_TIMESTAMP  COMMENT '创建时间',
+  `update_time`      DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能报告配置表（规则阈值+业务数据）';

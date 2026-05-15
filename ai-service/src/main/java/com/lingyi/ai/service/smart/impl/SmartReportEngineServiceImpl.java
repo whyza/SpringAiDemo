@@ -1,8 +1,12 @@
 package com.lingyi.ai.service.smart.impl;
 
+import com.lingyi.ai.dal.dataobject.DailyReportDO;
+import com.lingyi.ai.dal.dataobject.SmartReportConfigDO;
+import com.lingyi.ai.dal.mapper.DailyReportMapper;
 import com.lingyi.ai.model.dto.SmartReportRequestDTO;
 import com.lingyi.ai.model.vo.SmartReportResultVO;
 import com.lingyi.ai.service.ai.AiAnalysisService;
+import com.lingyi.ai.service.smart.SmartReportConfigService;
 import com.lingyi.ai.service.smart.SmartReportEngineService;
 import jakarta.annotation.Resource;
 import lombok.Data;
@@ -29,8 +33,51 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
     @Resource
     private AiAnalysisService aiAnalysisService;
 
+    @Resource
+    private SmartReportConfigService smartReportConfigService;
+
+    @Resource
+    private DailyReportMapper dailyReportMapper;
+
     @Override
     public SmartReportResultVO analyze(SmartReportRequestDTO request) {
+        // 前端未传业务数据时，从数据库加载
+        if (request.isDataMissing()) {
+            SmartReportConfigDO config = smartReportConfigService.loadLatest();
+            if (config != null && config.getTodayRevenue() != null) {
+                log.info("从 smart_report_config 加载业务数据，id={}", config.getId());
+                fillFromConfig(request, config);
+            } else {
+                // 降级：从 daily_report 加载最新记录
+                DailyReportDO daily = dailyReportMapper.selectOne(
+                        new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<DailyReportDO>()
+                                .orderByDesc(DailyReportDO::getReportDate)
+                                .last("LIMIT 1"));
+                if (daily != null) {
+                    log.info("从 daily_report 加载业务数据，date={}", daily.getReportDate());
+                    request.setTodayRevenue(daily.getTodayRevenue());
+                    request.setYesterdayRevenue(daily.getYesterdayRevenue());
+                    request.setTodayOrders(daily.getTodaySales());
+                    request.setYesterdayOrders(daily.getYesterdaySales());
+                    request.setTodayRisingLinks(daily.getRisingLinks());
+                    request.setTodayFallingLinks(daily.getFallingLinks());
+                    request.setTodayNoOrderLinks(daily.getNoOrderLinks());
+                    // 昨日链接数从更早的记录获取
+                    DailyReportDO prevDaily = dailyReportMapper.selectOne(
+                            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<DailyReportDO>()
+                                    .lt(DailyReportDO::getReportDate, daily.getReportDate())
+                                    .orderByDesc(DailyReportDO::getReportDate)
+                                    .last("LIMIT 1"));
+                    if (prevDaily != null) {
+                        request.setYesterdayRisingLinks(prevDaily.getRisingLinks());
+                        request.setYesterdayFallingLinks(prevDaily.getFallingLinks());
+                        request.setYesterdayNoOrderLinks(prevDaily.getNoOrderLinks());
+                    }
+                } else {
+                    log.warn("daily_report 也无数据，将使用零值");
+                }
+            }
+        }
         request.applyDefaults();
 
         String diagnosisConclusionText = generateDiagnosisConclusion(request);
@@ -43,7 +90,7 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         SmartReportResultVO result = new SmartReportResultVO();
         result.setDiagnosisConclusionText(diagnosisConclusionText);
         result.setOperationDiagnosisText(operationDiagnosisText);
-        result.setFullModelResponse(diagnosisConclusionText + "\n" + operationDiagnosisText);
+//        result.setFullModelResponse(diagnosisConclusionText + "\n" + operationDiagnosisText);
 
         SmartReportResultVO.DiagnosisConclusionVO diagnosisConclusion = new SmartReportResultVO.DiagnosisConclusionVO();
         diagnosisConclusion.setRedAlerts(structuredDiagnosis.getRedAlerts());
@@ -487,6 +534,25 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
 
     private int safeInt(Integer value) {
         return value == null ? 0 : value;
+    }
+
+    private void fillFromConfig(SmartReportRequestDTO request, SmartReportConfigDO config) {
+        request.setTodayRevenue(config.getTodayRevenue());
+        request.setYesterdayRevenue(config.getYesterdayRevenue());
+        request.setTodayOrders(config.getTodayOrders());
+        request.setYesterdayOrders(config.getYesterdayOrders());
+        request.setTodayRisingLinks(config.getTodayRisingLinks());
+        request.setYesterdayRisingLinks(config.getYesterdayRisingLinks());
+        request.setTodayFallingLinks(config.getTodayFallingLinks());
+        request.setYesterdayFallingLinks(config.getYesterdayFallingLinks());
+        request.setTodayNoOrderLinks(config.getTodayNoOrderLinks());
+        request.setYesterdayNoOrderLinks(config.getYesterdayNoOrderLinks());
+        if (config.getR1Threshold() != null) request.setR1Threshold(config.getR1Threshold());
+        if (config.getR2Threshold() != null) request.setR2Threshold(config.getR2Threshold());
+        if (config.getR3Threshold() != null) request.setR3Threshold(config.getR3Threshold());
+        if (config.getY1Threshold() != null) request.setY1Threshold(config.getY1Threshold());
+        if (config.getG1Threshold() != null) request.setG1Threshold(config.getG1Threshold());
+        if (config.getG2Threshold() != null) request.setG2Threshold(config.getG2Threshold());
     }
 
     @Data

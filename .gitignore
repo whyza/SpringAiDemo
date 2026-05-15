@@ -1,1 +1,6 @@
 /.env.example
+/ai-service/target/
+/ai-model/target/
+/ai-dal/target/
+/ai-web/target/
+/.idea/

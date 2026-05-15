@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS `smart_report_config` (
   `y1_threshold`     DECIMAL(5,2) DEFAULT 10.00             COMMENT 'Y1: 销售额小幅下滑阈值(%)',
   `g1_threshold`     DECIMAL(5,2) DEFAULT 10.00             COMMENT 'G1: 销售额增长阈值(%)',
   `g2_threshold`     DECIMAL(5,2) DEFAULT 40.00             COMMENT 'G2: 上涨链接占比阈值(%)',
+  `full_model_output` TEXT                                  COMMENT '模型完整输出文本（原始 AI 返回内容）',
   `create_time`      DATETIME     DEFAULT CURRENT_TIMESTAMP  COMMENT '创建时间',
   `update_time`      DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`)

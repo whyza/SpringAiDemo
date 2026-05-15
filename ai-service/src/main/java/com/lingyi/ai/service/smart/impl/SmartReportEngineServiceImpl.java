@@ -1,9 +1,11 @@
 package com.lingyi.ai.service.smart.impl;
 
+import com.lingyi.ai.dal.dataobject.SmartReportConfigDO;
 import com.lingyi.ai.dal.dataobject.SmartRuleConfigDO;
 import com.lingyi.ai.model.dto.SmartReportRequestDTO;
 import com.lingyi.ai.model.vo.SmartReportResultVO;
 import com.lingyi.ai.service.ai.AiAnalysisService;
+import com.lingyi.ai.service.smart.SmartReportConfigService;
 import com.lingyi.ai.service.smart.SmartReportEngineService;
 import com.lingyi.ai.service.smart.SmartReportProgress;
 import com.lingyi.ai.service.smart.SmartRuleConfigService;
@@ -37,6 +39,9 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
     @Resource
     private SmartRuleConfigService smartRuleConfigService;
 
+    @Resource
+    private SmartReportConfigService smartReportConfigService;
+
     @Override
     public SmartReportResultVO analyze(SmartReportRequestDTO request) {
         return analyze(request, SmartReportProgress.NOOP);
@@ -55,7 +60,39 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
 
         SmartReportResultVO result = buildResult(parts);
         progress.accept(SmartReportProgress.COMPLETE);
+
+        // 按日期存储完整输出（相同日期覆盖更新）
+        try {
+            saveFullOutput(request, fullResponse);
+        } catch (Exception e) {
+            log.warn("保存完整模型输出失败，不影响分析结果", e);
+        }
+
         return result;
+    }
+
+    private void saveFullOutput(SmartReportRequestDTO request, String fullResponse) {
+        SmartReportConfigDO config = new SmartReportConfigDO();
+        config.setReportDate(request.getReportDate() != null ? request.getReportDate() : java.time.LocalDate.now());
+        config.setTodayRevenue(request.getTodayRevenue());
+        config.setYesterdayRevenue(request.getYesterdayRevenue());
+        config.setTodayOrders(request.getTodayOrders());
+        config.setYesterdayOrders(request.getYesterdayOrders());
+        config.setTodayRisingLinks(request.getTodayRisingLinks());
+        config.setYesterdayRisingLinks(request.getYesterdayRisingLinks());
+        config.setTodayFallingLinks(request.getTodayFallingLinks());
+        config.setYesterdayFallingLinks(request.getYesterdayFallingLinks());
+        config.setTodayNoOrderLinks(request.getTodayNoOrderLinks());
+        config.setYesterdayNoOrderLinks(request.getYesterdayNoOrderLinks());
+        config.setR1Threshold(request.getR1Threshold());
+        config.setR2Threshold(request.getR2Threshold());
+        config.setR3Threshold(request.getR3Threshold());
+        config.setY1Threshold(request.getY1Threshold());
+        config.setG1Threshold(request.getG1Threshold());
+        config.setG2Threshold(request.getG2Threshold());
+        config.setFullModelOutput(fullResponse);
+        smartReportConfigService.saveConfig(config);
+        log.info("模型完整输出已保存，reportDate={}", config.getReportDate());
     }
 
     // ==================== 阈值加载 ====================
@@ -247,27 +284,27 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         result.setRedAlerts(extractDiagnosisConclusionLines(diagnosisConclusionText, "🔴"));
         result.setYellowAlerts(extractDiagnosisConclusionLines(diagnosisConclusionText, "🟡"));
         result.setGreenHighlights(extractDiagnosisConclusionLines(diagnosisConclusionText, "🟢"));
-        result.setOverallPerformance(extractSectionByNumber(operationDiagnosisText, "①", "②"));
-        result.setLinkStructureAnalysis(extractSectionByNumber(operationDiagnosisText, "②", "③"));
-        result.setAnomalyLogicJudgment(extractSectionByNumber(operationDiagnosisText, "③", "④"));
-        result.setOperationSuggestions(extractSectionByNumber(operationDiagnosisText, "④", null));
+        result.setOverallPerformance(extractSectionText(operationDiagnosisText, "①", "②"));
+        result.setLinkStructureAnalysis(extractSectionText(operationDiagnosisText, "②", "③"));
+        result.setAnomalyLogicJudgment(extractSectionText(operationDiagnosisText, "③", "④"));
+        result.setOperationSuggestions(extractSectionText(operationDiagnosisText, "④", null));
         return result;
     }
 
-    private List<String> extractSectionByNumber(String content, String currentNum, String nextNum) {
+    private String extractSectionText(String content, String currentNum, String nextNum) {
         if (content == null || content.trim().isEmpty()) {
-            return Collections.emptyList();
+            return "";
         }
         int fromIdx = content.indexOf(currentNum);
         if (fromIdx < 0) {
-            return Collections.emptyList();
+            return "";
         }
         int toIdx = (nextNum == null) ? content.length() : content.indexOf(nextNum, fromIdx + 1);
         if (toIdx < 0) {
             toIdx = content.length();
         }
         String section = content.substring(fromIdx + 1, toIdx).trim();
-        // 跳过标签前缀（如 "整体表现：" 或换行后的标签行）
+        // 跳过标签前缀
         int colonIdx = section.indexOf("：");
         if (colonIdx > 0 && colonIdx < 30) {
             section = section.substring(colonIdx + 1).trim();
@@ -277,17 +314,7 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 section = section.substring(nl + 1).trim();
             }
         }
-        if (section.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<String> result = new ArrayList<>();
-        for (String line : section.split("\\r?\\n")) {
-            String cleaned = line.replaceFirst("^[0-9]+\\.\\s*", "").replace("✅", "").replace("⚠️", "").trim();
-            if (!cleaned.isEmpty()) {
-                result.add(cleaned);
-            }
-        }
-        return result;
+        return section;
     }
 
     private List<String> extractDiagnosisConclusionLines(String diagnosisConclusion, String tag) {
@@ -489,9 +516,9 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         private List<String> redAlerts;
         private List<String> yellowAlerts;
         private List<String> greenHighlights;
-        private List<String> overallPerformance;
-        private List<String> linkStructureAnalysis;
-        private List<String> anomalyLogicJudgment;
-        private List<String> operationSuggestions;
+        private String overallPerformance;
+        private String linkStructureAnalysis;
+        private String anomalyLogicJudgment;
+        private String operationSuggestions;
     }
 }

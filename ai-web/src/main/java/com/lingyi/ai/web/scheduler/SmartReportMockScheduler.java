@@ -83,10 +83,10 @@ public class SmartReportMockScheduler {
 
             if (result.getOperationDiagnosis() != null) {
                 log.info("运营诊断 - 整体表现: {} 条, 链接结构: {} 条, 异常判断: {} 条, 运营建议: {} 条",
-                        result.getOperationDiagnosis().getOverallPerformance().size(),
-                        result.getOperationDiagnosis().getLinkStructureAnalysis().size(),
-                        result.getOperationDiagnosis().getAnomalyLogicJudgment().size(),
-                        result.getOperationDiagnosis().getOperationSuggestions().size());
+                        result.getOperationDiagnosis().getOverallPerformance(),
+                        result.getOperationDiagnosis().getLinkStructureAnalysis(),
+                        result.getOperationDiagnosis().getAnomalyLogicJudgment(),
+                        result.getOperationDiagnosis().getOperationSuggestions());
             }
 
             log.info("========== 智能报告 Mock 分析完成, 耗时: {}ms ==========", elapsed);

@@ -6,33 +6,19 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 智能报告配置表（规则阈值+业务数据）
+ * 全局规则配置表（阈值），全表仅一条记录
  *
  * @author lingyi
  */
 @Data
-@TableName("smart_report_config")
-public class SmartReportConfigDO {
+@TableName("smart_rule_config")
+public class SmartRuleConfigDO {
 
     @TableId(type = IdType.AUTO)
     private Long id;
-
-    private LocalDate reportDate;
-
-    private BigDecimal todayRevenue;
-    private BigDecimal yesterdayRevenue;
-    private Integer todayOrders;
-    private Integer yesterdayOrders;
-    private Integer todayRisingLinks;
-    private Integer yesterdayRisingLinks;
-    private Integer todayFallingLinks;
-    private Integer yesterdayFallingLinks;
-    private Integer todayNoOrderLinks;
-    private Integer yesterdayNoOrderLinks;
 
     private BigDecimal r1Threshold;
     private BigDecimal r2Threshold;

@@ -197,12 +197,16 @@ body {
 .result-time { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; }
 .result-placeholder {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 60px 20px; color: var(--text3); text-align: center;
-  background: var(--surface); border: 1px dashed var(--border2);
-  border-radius: var(--radius); margin-top: 20px;
+  padding: 48px 32px; color: var(--text3); text-align: center;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-top: 16px;
 }
-.result-placeholder .icon { font-size: 28px; margin-bottom: 10px; opacity: 0.5; }
-.result-placeholder p { font-size: 13px; }
+.rp-icon { color: var(--border2); margin-bottom: 12px; }
+.rp-title2 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.rp-desc { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+.rp-hints { display: flex; flex-direction: column; gap: 6px; }
+.rp-hint { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text3); }
+.rp-hint-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
 .result-content { display: none; }
 .result-content.show { display: block; }
@@ -295,6 +299,12 @@ body {
   padding: 8px 0 2px 0;
   font-size: 13px; line-height: 1.6; color: var(--text2);
 }
+.od-plain-item {
+  padding: 5px 0; font-size: 13px; line-height: 1.65; color: var(--text);
+}
+.od-plain-item + .od-plain-item {
+  border-top: 1px solid var(--border);
+}
 
 .toast {
   position: fixed; bottom: 24px; right: 24px;
@@ -306,49 +316,69 @@ body {
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast.error { background: var(--red); }
 
-/* Loading overlay */
-.loading-overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(26, 25, 22, 0.4);
-  z-index: 1000; align-items: center; justify-content: center;
+/* Result progress (inline in right panel) */
+.result-progress {
+  display: none;
 }
-.loading-overlay.show { display: flex; }
-.loading-card {
-  background: white; border-radius: var(--radius);
-  padding: 28px 36px; text-align: center;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-  min-width: 300px;
+.result-progress.show {
+  display: block;
+  animation: fadeIn 0.2s ease;
 }
-.spinner {
-  width: 32px; height: 32px; margin: 0 auto 14px;
-  border: 3px solid var(--border); border-top-color: var(--text);
-  border-radius: 50%; animation: spin 0.7s linear infinite;
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.rp-title {
+  font-size: 15px; font-weight: 600; color: var(--text);
+  margin-bottom: 20px; letter-spacing: -0.01em;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
-.step-list { text-align: left; min-width: 220px; }
-.step-item { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; transition: all 0.15s; }
+.step-list { }
+.step-item {
+  display: flex; gap: 14px; position: relative;
+  padding: 0 0 24px 0;
+}
+.step-item:last-child { padding-bottom: 0; }
+.step-line {
+  position: absolute; left: 13px; top: 28px;
+  width: 2px; height: calc(100% - 28px);
+  background: var(--border); transition: background 0.3s;
+}
+.step-item:last-child .step-line { display: none; }
+.step-item.done .step-line { background: var(--green); }
+
 .step-dot {
-  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
-  border: 2px solid var(--border2); background: transparent;
+  position: relative; z-index: 1;
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 700; transition: all 0.2s;
+  font-size: 12px; font-weight: 600;
+  transition: all 0.3s;
+}
+.step-item.pending .step-dot {
+  background: var(--surface2); border: 2px solid var(--border2);
+  color: var(--text3);
+}
+.step-item.active .step-dot {
+  background: var(--blue); border: 2px solid var(--blue);
+  color: white;
+  box-shadow: 0 0 0 4px rgba(26, 79, 191, 0.15);
+  animation: step-pulse 1.5s ease-in-out infinite;
+}
+@keyframes step-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(26, 79, 191, 0.15); }
+  50% { box-shadow: 0 0 0 10px rgba(26, 79, 191, 0.05); }
 }
 .step-item.done .step-dot {
-  background: var(--green); border-color: var(--green);
+  background: var(--green); border: 2px solid var(--green);
+  color: white;
 }
-.step-item.done .step-dot::after { content: '✓'; color: white; font-size: 10px; font-weight: 700; }
-.step-item.active .step-dot {
-  border-color: var(--blue); border-width: 3px;
-  animation: pulse-dot 1s ease-in-out infinite;
-}
-@keyframes pulse-dot {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 79, 191, 0.3); }
-  50% { box-shadow: 0 0 0 6px rgba(26, 79, 191, 0); }
-}
-.step-item.done .step-label { color: var(--green); }
-.step-item.active .step-label { color: var(--text); font-weight: 600; }
+
+.step-info { flex: 1; min-width: 0; padding-top: 3px; }
+.step-label { font-size: 14px; font-weight: 500; color: var(--text); }
 .step-item.pending .step-label { color: var(--text3); }
-.loading-card p { font-size: 14px; font-weight: 500; color: var(--text); }
+.step-item.done .step-label { color: var(--green); }
+.step-desc {
+  font-size: 12px; color: var(--text2); margin-top: 2px;
+  line-height: 1.4; transition: all 0.2s;
+}
+.step-item.pending .step-desc { color: var(--text3); }
+.step-item.active .step-desc { color: var(--blue); font-weight: 500; }
 
 @media (max-width: 960px) {
   .shell { grid-template-columns: 1fr; }
@@ -554,14 +584,59 @@ body {
           <span class="result-time" id="resultTime"></span>
         </div>
         <div class="result-placeholder" id="resultPlaceholder">
-          <div class="icon">◆</div>
-          <p>点击「开始分析」生成诊断报告</p>
+          <div class="rp-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+          </div>
+          <div class="rp-title2">智能报告分析</div>
+          <p class="rp-desc">配置左侧规则阈值后点击「开始分析」</p>
+          <div class="rp-hints">
+            <div class="rp-hint"><span class="rp-hint-dot" style="background:var(--red)"></span>红色预警 — 需立即关注</div>
+            <div class="rp-hint"><span class="rp-hint-dot" style="background:var(--amber)"></span>黄色提醒 — 值得注意</div>
+            <div class="rp-hint"><span class="rp-hint-dot" style="background:var(--green)"></span>绿色亮点 — 运营良好</div>
+          </div>
         </div>
         <div class="result-content" id="resultContent">
           <div class="sec-label">诊断结论</div>
           <div id="diagnosisConclusion"></div>
           <div class="sec-label" style="margin-top:20px">运营诊断</div>
           <div id="operationDiagnosis"></div>
+        </div>
+        <div class="result-progress" id="resultProgress">
+          <div class="rp-title">智能分析中</div>
+          <div class="step-list" id="stepList">
+            <div class="step-item" data-step="loading">
+              <div class="step-dot">1</div>
+              <div class="step-info">
+                <div class="step-label">加载业务数据</div>
+                <div class="step-desc"></div>
+              </div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-item" data-step="ai_analysis">
+              <div class="step-dot">2</div>
+              <div class="step-info">
+                <div class="step-label">AI 分析诊断</div>
+                <div class="step-desc"></div>
+              </div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-item" data-step="parsing">
+              <div class="step-dot">3</div>
+              <div class="step-info">
+                <div class="step-label">解析分析结果</div>
+                <div class="step-desc"></div>
+              </div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-item" data-step="complete">
+              <div class="step-dot">✓</div>
+              <div class="step-info">
+                <div class="step-label">分析完成</div>
+                <div class="step-desc"></div>
+              </div>
+              <div class="step-line"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -573,22 +648,13 @@ body {
 
 <div class="toast" id="toast"></div>
 
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-card">
-    <div class="spinner"></div>
-    <p style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text);">分析进度</p>
-    <div class="step-list" id="stepList">
-      <div class="step-item" data-step="loading"><span class="step-dot"></span><span class="step-label">加载业务数据</span></div>
-      <div class="step-item" data-step="ai_analysis"><span class="step-dot"></span><span class="step-label">AI 正在分析诊断</span></div>
-      <div class="step-item" data-step="parsing"><span class="step-dot"></span><span class="step-label">解析分析结果</span></div>
-      <div class="step-item" data-step="saving"><span class="step-dot"></span><span class="step-label">保存分析配置</span></div>
-      <div class="step-item" data-step="complete"><span class="step-dot"></span><span class="step-label">分析完成</span></div>
-    </div>
-  </div>
-</div>
+
 
 <script>
 const API_BASE = '/api';
+
+// 当前页面展示的业务数据（用于分析时提交）
+let currentData = {};
 
 // 三种演示场景数据（业务数据 + 规则阈值）
 const demos = {
@@ -636,8 +702,14 @@ function getRuleValues() {
 }
 
 function showLoading(show) {
-  document.getElementById('loadingOverlay').classList.toggle('show', show);
-  if (show) resetProgress();
+  const placeholder = document.getElementById('resultPlaceholder');
+  const progress = document.getElementById('resultProgress');
+  placeholder.style.display = show ? 'none' : 'flex';
+  progress.classList.toggle('show', show);
+  if (show) {
+    document.getElementById('resultContent').classList.remove('show');
+    resetProgress();
+  }
 }
 
 function fmtNum(n) {
@@ -670,18 +742,16 @@ async function loadDemo(key) {
   const demo = demos[key];
   if (!demo) return;
 
-  // 展示业务数据（不修改规则阈值）
+  // 展示并保存业务数据到数据库
+  const today = new Date().toISOString().slice(0,10);
+  currentData = { reportDate: today, ...demo };
   updateDataDisplay(demo);
-
-  // 保存演示数据 + 当前规则配置到数据库
-  const rules = getRuleValues();
   await fetch(API_BASE + '/smart-report/config/save', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...demo, ...rules })
+    body: JSON.stringify(currentData)
   });
-
-  showToast('已加载' + demo.label + '并保存到数据库');
+  showToast('已加载' + demo.label);
 }
 
 function resetDefaults() {
@@ -694,39 +764,47 @@ function resetDefaults() {
   showToast('已恢复默认规则阈值');
 }
 
-// 从数据库加载规则配置
+// 从数据库加载全局规则阈值 + 业务数据
 async function loadConfig() {
   try {
-    const resp = await fetch(API_BASE + '/smart-report/config/load');
-    if (!resp.ok) return;
-    const data = await resp.json();
-    if (data.code === 200 && data.data) {
-      const c = data.data;
-      if (c.r1Threshold != null) document.getElementById('r1Threshold').value = c.r1Threshold;
-      if (c.r2Threshold != null) document.getElementById('r2Threshold').value = c.r2Threshold;
-      if (c.r3Threshold != null) document.getElementById('r3Threshold').value = c.r3Threshold;
-      if (c.y1Threshold != null) document.getElementById('y1Threshold').value = c.y1Threshold;
-      if (c.g1Threshold != null) document.getElementById('g1Threshold').value = c.g1Threshold;
-      if (c.g2Threshold != null) document.getElementById('g2Threshold').value = c.g2Threshold;
-      // 有业务数据时一同展示
-      if (c.todayRevenue != null) updateDataDisplay(c);
-      showToast('已从数据库加载规则配置');
+    // 加载全局规则阈值
+    const ruleResp = await fetch(API_BASE + '/smart-report/rule-config/load');
+    if (ruleResp.ok) {
+      const ruleData = await ruleResp.json();
+      if (ruleData.code === 200 && ruleData.data) {
+        const r = ruleData.data;
+        if (r.r1Threshold != null) document.getElementById('r1Threshold').value = r.r1Threshold;
+        if (r.r2Threshold != null) document.getElementById('r2Threshold').value = r.r2Threshold;
+        if (r.r3Threshold != null) document.getElementById('r3Threshold').value = r.r3Threshold;
+        if (r.y1Threshold != null) document.getElementById('y1Threshold').value = r.y1Threshold;
+        if (r.g1Threshold != null) document.getElementById('g1Threshold').value = r.g1Threshold;
+        if (r.g2Threshold != null) document.getElementById('g2Threshold').value = r.g2Threshold;
+      }
+    }
+    // 加载当日业务数据
+    const today = new Date().toISOString().slice(0,10);
+    const bizResp = await fetch(API_BASE + '/smart-report/config/load?date=' + today);
+    if (bizResp.ok) {
+      const bizData = await bizResp.json();
+      if (bizData.code === 200 && bizData.data && bizData.data.todayRevenue != null) {
+        currentData = { ...bizData.data };
+        updateDataDisplay(bizData.data);
+      }
     }
   } catch (e) {
     console.log('加载配置失败（首次或无数据库记录属于正常）');
   }
 }
 
-// 保存配置到数据库
+// 保存全局规则阈值
 async function saveConfig() {
   const rules = getRuleValues();
-  const body = { ...rules };
 
   try {
-    const resp = await fetch(API_BASE + '/smart-report/config/save', {
+    const resp = await fetch(API_BASE + '/smart-report/rule-config/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify(rules)
     });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
@@ -740,14 +818,20 @@ async function saveConfig() {
   }
 }
 
-function showResult(show) {
-  document.getElementById('resultPlaceholder').style.display = show ? 'none' : 'flex';
-  document.getElementById('resultContent').classList.toggle('show', show);
-}
-
 async function analyze() {
   const btn = document.getElementById('analyzeBtn');
   const rules = getRuleValues();
+
+  // 无业务数据时自动加载绿色演示场景兜底
+  if (currentData.todayRevenue == null) {
+    const demo = demos.green;
+    const today = new Date().toISOString().slice(0,10);
+    currentData = { reportDate: today, ...demo };
+    updateDataDisplay(demo);
+  }
+
+  // 合并当前业务数据和规则阈值，确保后端无需再查库
+  const requestBody = { ...currentData, ...rules };
 
   document.getElementById('diagnosisConclusion').innerHTML = '';
   document.getElementById('operationDiagnosis').innerHTML = '';
@@ -757,11 +841,15 @@ async function analyze() {
   btn.disabled = true;
   btn.textContent = '分析中...';
 
+  const mainEl = document.querySelector('.main');
+  if (mainEl) mainEl.scrollTop = 0;
+  document.documentElement.scrollTop = 0;
+
   try {
     const resp = await fetch(API_BASE + '/smart-report/analyze-stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(rules)
+      body: JSON.stringify(requestBody)
     });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     if (!resp.body) throw new Error('浏览器不支持流式读取');
@@ -814,14 +902,13 @@ async function analyze() {
     showToast('请求失败：' + e.message, true);
     renderLocalFallback(rules);
   } finally {
-    showLoading(false);
     btn.disabled = false;
     btn.textContent = '开始分析';
   }
 }
 
 function updateProgress(step, message) {
-  const order = ['loading','ai_analysis','parsing','saving','complete'];
+  const order = ['loading','ai_analysis','parsing','complete'];
   const idx = order.indexOf(step);
   if (idx < 0) return;
   const items = document.querySelectorAll('.step-item');
@@ -830,6 +917,17 @@ function updateProgress(step, message) {
     if (i < idx) el.classList.add('done');
     else if (i === idx) el.classList.add('active');
     else el.classList.add('pending');
+    // Update description for active/done step
+    const desc = el.querySelector('.step-desc');
+    if (desc) {
+      if (i === idx && message) {
+        desc.textContent = message;
+      } else if (i < idx) {
+        desc.textContent = '完成';
+      } else {
+        desc.textContent = '';
+      }
+    }
   });
 }
 
@@ -848,7 +946,8 @@ function renderResult(data) {
   document.getElementById('resultTime').textContent = now;
   document.getElementById('diagnosisConclusion').innerHTML = formatDiagnosisConclusion(data['诊断结论']);
   document.getElementById('operationDiagnosis').innerHTML = formatOperationDiagnosis(data['运营诊断']);
-  showResult(true);
+  document.getElementById('resultProgress').classList.remove('show');
+  document.getElementById('resultContent').classList.add('show');
 }
 
 function formatDiagnosisConclusion(dc) {
@@ -882,14 +981,23 @@ function formatOperationDiagnosis(od) {
   const sections = [
     { key: '整体表现', emoji: '📊', label: '整体表现' },
     { key: '链接结构分析', emoji: '🔗', label: '链接结构分析', table: true },
-    { key: '异常逻辑判断', emoji: '⚠️', label: '异常逻辑判断' },
-    { key: '运营建议', emoji: '💡', label: '运营建议', suggestion: true }
+    { key: '异常逻辑判断', emoji: '⚠️', label: '异常逻辑判断', plain: true },
+    { key: '运营建议', emoji: '💡', label: '运营建议', suggestion: true, markdown: true }
   ];
   return '<div class="od-section">' + sections.map(s => {
     const items = od[s.key];
     const hasItems = Array.isArray(items) && items.length;
     if (!hasItems) return '';
-    const content = s.table ? renderTableContent(items) : renderListContent(items);
+    let content;
+    if (s.table) {
+      content = renderTableContent(items);
+    } else if (s.plain) {
+      content = renderPlainContent(items);
+    } else if (s.markdown) {
+      content = renderMarkdownListContent(items);
+    } else {
+      content = renderListContent(items);
+    }
     if (s.suggestion) {
       return '<div class="od-suggestion">' +
         '<div class="od-title"><span class="emoji">' + s.emoji + '</span>' + s.label + '</div>' +
@@ -940,6 +1048,18 @@ function renderListContent(items) {
   return '<ul class="od-list">' + items.map(i => '<li>' + escHtml(i) + '</li>').join('') + '</ul>';
 }
 
+function renderPlainContent(items) {
+  return items.map(i => '<div class="od-plain-item">' + escHtml(i) + '</div>').join('');
+}
+
+function renderMarkdownListContent(items) {
+  return '<ul class="od-list">' + items.map(i => '<li>' + renderInlineMarkdown(escHtml(i)) + '</li>').join('') + '</ul>';
+}
+
+function renderInlineMarkdown(text) {
+  return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+
 function escHtml(str) {
   const d = document.createElement('div');
   d.textContent = str;
@@ -976,8 +1096,12 @@ function showToast(msg, isError) {
   }, 2800);
 }
 
-// 页面加载时自动从数据库加载配置
-loadConfig();
+// 页面加载时自动从数据库加载配置，无数据时默认加载绿色场景
+loadConfig().then(() => {
+  if (currentData.todayRevenue == null) {
+    loadDemo('green');
+  }
+});
 </script>
 </body>
 </html>

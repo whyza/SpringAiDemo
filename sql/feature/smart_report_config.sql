@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS `smart_report_config` (
   `id`               BIGINT        NOT NULL AUTO_INCREMENT  COMMENT '主键ID',
+  `report_date`      DATE                                   COMMENT '报告日期',
   `today_revenue`    DECIMAL(15,2)                          COMMENT '当天销售额',
   `yesterday_revenue` DECIMAL(15,2)                         COMMENT '昨日销售额',
   `today_orders`     INT                                    COMMENT '当天订单量',

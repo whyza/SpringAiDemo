@@ -310,11 +310,50 @@ body {
   position: fixed; bottom: 24px; right: 24px;
   background: var(--text); color: white; font-size: 13px; font-weight: 500;
   padding: 10px 18px; border-radius: var(--radius);
-  opacity: 0; transform: translateY(8px);
-  transition: all 0.2s; pointer-events: none; z-index: 999;
+  opacity: 0; transform: translateY(8px) scale(0.96);
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none; z-index: 999;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
-.toast.show { opacity: 1; transform: translateY(0); }
+.toast.show { opacity: 1; transform: translateY(0) scale(1); }
 .toast.error { background: var(--red); }
+
+.blur-active .split-left {
+  filter: blur(5px) brightness(0.97);
+  pointer-events: none;
+  transition: filter 0.4s ease;
+  position: relative;
+}
+.blur-active .split-left::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.03);
+  pointer-events: none;
+}
+.blur-active .split-right {
+  position: relative;
+}
+.blur-active .split-right::before {
+  content: '⟳ 分析中';
+  position: absolute; top: 40%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 15px; font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  padding: 12px 28px;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  z-index: 5;
+  animation: loadingPulse 1.6s ease-in-out infinite;
+  letter-spacing: 0.02em;
+}
+@keyframes loadingPulse {
+  0%, 100% { opacity: 0.7; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+  50% { opacity: 1; box-shadow: 0 4px 32px rgba(0,0,0,0.15); }
+}
+.split-right {
+  transition: filter 0.3s ease;
+}
 
 /* Result progress (inline in right panel) */
 .result-progress {
@@ -325,6 +364,7 @@ body {
   animation: fadeIn 0.2s ease;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .rp-title {
   font-size: 15px; font-weight: 600; color: var(--text);
   margin-bottom: 20px; letter-spacing: -0.01em;
@@ -840,6 +880,8 @@ async function analyze() {
   updateProgress('loading', '正在加载业务数据...');
   btn.disabled = true;
   btn.textContent = '分析中...';
+  document.querySelector('.content').classList.add('blur-active');
+  showAnalyzeToast();
 
   const mainEl = document.querySelector('.main');
   if (mainEl) mainEl.scrollTop = 0;
@@ -904,6 +946,7 @@ async function analyze() {
   } finally {
     btn.disabled = false;
     btn.textContent = '开始分析';
+    document.querySelector('.content')?.classList.remove('blur-active');
   }
 }
 
@@ -985,18 +1028,17 @@ function formatOperationDiagnosis(od) {
     { key: '运营建议', emoji: '💡', label: '运营建议', suggestion: true, markdown: true }
   ];
   return '<div class="od-section">' + sections.map(s => {
-    const items = od[s.key];
-    const hasItems = Array.isArray(items) && items.length;
-    if (!hasItems) return '';
+    const text = od[s.key];
+    if (!text || !text.trim()) return '';
     let content;
     if (s.table) {
-      content = renderTableContent(items);
+      content = renderTableContent(text);
     } else if (s.plain) {
-      content = renderPlainContent(items);
+      content = renderPlainContent(text);
     } else if (s.markdown) {
-      content = renderMarkdownListContent(items);
+      content = renderMarkdownListContent(text);
     } else {
-      content = renderListContent(items);
+      content = renderListContent(text);
     }
     if (s.suggestion) {
       return '<div class="od-suggestion">' +
@@ -1009,21 +1051,19 @@ function formatOperationDiagnosis(od) {
   }).join('') + '</div>';
 }
 
-function renderTableContent(items) {
+function renderTableContent(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   let html = '';
   let inTable = false;
-  for (let i = 0; i < items.length; i++) {
-    const line = items[i].trim();
+  for (const line of lines) {
     // Detect table rows: lines that start with |
     if (line.startsWith('|') && line.endsWith('|')) {
-      // Skip separator rows like |---|---|
       if (/^\|[-:\s|]+\|$/.test(line)) continue;
       if (!inTable) {
         html += '<table class="od-table"><thead><tr>';
         inTable = true;
       }
       const cells = line.split('|').filter(c => c.trim() !== '');
-      // First table row is header, rest are body
       if (html.includes('</thead>')) {
         html += '<tr>' + cells.map(c => '<td>' + escHtml(c.trim()) + '</td>').join('') + '</tr>';
       } else {
@@ -1035,7 +1075,7 @@ function renderTableContent(items) {
         html += '</tbody></table>';
         inTable = false;
       }
-      html += '<div class="od-table-note">' + escHtml(items[i]) + '</div>';
+      html += '<div class="od-table-note">' + escHtml(line) + '</div>';
     }
   }
   if (inTable) {
@@ -1044,16 +1084,19 @@ function renderTableContent(items) {
   return html;
 }
 
-function renderListContent(items) {
-  return '<ul class="od-list">' + items.map(i => '<li>' + escHtml(i) + '</li>').join('') + '</ul>';
+function renderListContent(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  return '<ul class="od-list">' + lines.map(l => '<li>' + escHtml(l) + '</li>').join('') + '</ul>';
 }
 
-function renderPlainContent(items) {
-  return items.map(i => '<div class="od-plain-item">' + escHtml(i) + '</div>').join('');
+function renderPlainContent(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  return lines.map(l => '<div class="od-plain-item">' + escHtml(l) + '</div>').join('');
 }
 
-function renderMarkdownListContent(items) {
-  return '<ul class="od-list">' + items.map(i => '<li>' + renderInlineMarkdown(escHtml(i)) + '</li>').join('') + '</ul>';
+function renderMarkdownListContent(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  return '<ul class="od-list">' + lines.map(l => '<li>' + renderInlineMarkdown(escHtml(l)) + '</li>').join('') + '</ul>';
 }
 
 function renderInlineMarkdown(text) {
@@ -1078,13 +1121,23 @@ function renderLocalFallback(rules) {
       '运营亮点': []
     },
     '运营诊断': {
-      '整体表现': ['服务暂不可用，无法获取运营诊断数据。'],
-      '链接结构分析': ['请确认后端服务已启动，且数据库中有业务数据。'],
-      '异常逻辑判断': ['当前显示为离线降级信息，非真实分析结果。'],
-      '运营建议': ['✅ 请检查服务状态后重新尝试分析。']
+      '整体表现': '服务暂不可用，无法获取运营诊断数据。',
+      '链接结构分析': '请确认后端服务已启动，且数据库中有业务数据。',
+      '异常逻辑判断': '当前显示为离线降级信息，非真实分析结果。',
+      '运营建议': '✅ 请检查服务状态后重新尝试分析。'
     }
   };
   renderResult(fallbackData);
+}
+
+function showAnalyzeToast() {
+  const t = document.getElementById('toast');
+  t.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite;margin-right:8px;">⟳</span> AI 智能分析已启动，正在生成诊断报告...';
+  t.className = 'toast show';
+  // 3秒后自动淡出
+  setTimeout(() => {
+    if (t.textContent.includes('已启动')) t.className = 'toast';
+  }, 3000);
 }
 
 function showToast(msg, isError) {

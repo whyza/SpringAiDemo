@@ -60,15 +60,15 @@ public class SmartReportResultVO {
     public static class OperationDiagnosisVO {
 
         @JsonProperty("整体表现")
-        private List<String> overallPerformance;
+        private String overallPerformance;
 
         @JsonProperty("链接结构分析")
-        private List<String> linkStructureAnalysis;
+        private String linkStructureAnalysis;
 
         @JsonProperty("异常逻辑判断")
-        private List<String> anomalyLogicJudgment;
+        private String anomalyLogicJudgment;
 
         @JsonProperty("运营建议")
-        private List<String> operationSuggestions;
+        private String operationSuggestions;
     }
 }

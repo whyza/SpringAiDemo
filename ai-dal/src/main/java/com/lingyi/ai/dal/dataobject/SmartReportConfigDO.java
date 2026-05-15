@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 智能报告配置表（规则阈值+业务数据）
+ * 智能报告配置表（规则阈值+业务数据+模型完整输出）
  *
  * @author lingyi
  */
@@ -40,6 +40,11 @@ public class SmartReportConfigDO {
     private BigDecimal y1Threshold;
     private BigDecimal g1Threshold;
     private BigDecimal g2Threshold;
+
+    /**
+     * 模型完整输出文本（原始 AI 返回内容）
+     */
+    private String fullModelOutput;
 
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

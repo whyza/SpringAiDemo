@@ -2,6 +2,8 @@ package com.lingyi.ai.service.smart;
 
 import com.lingyi.ai.dal.dataobject.SmartReportConfigDO;
 
+import java.time.LocalDate;
+
 /**
  * 智能报告配置服务
  *
@@ -10,12 +12,12 @@ import com.lingyi.ai.dal.dataobject.SmartReportConfigDO;
 public interface SmartReportConfigService {
 
     /**
-     * 保存配置（插入新记录）
+     * 保存配置（按日期覆盖）
      */
     void saveConfig(SmartReportConfigDO config);
 
     /**
-     * 加载最新配置
+     * 加载指定日期的配置
      */
-    SmartReportConfigDO loadLatest();
+    SmartReportConfigDO loadByDate(LocalDate date);
 }

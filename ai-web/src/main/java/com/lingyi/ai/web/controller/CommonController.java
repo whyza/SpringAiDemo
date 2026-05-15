@@ -2,6 +2,7 @@ package com.lingyi.ai.web.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lingyi.ai.dal.dataobject.SmartReportConfigDO;
+import com.lingyi.ai.dal.dataobject.SmartRuleConfigDO;
 import com.lingyi.ai.model.dto.DailyReportQueryDTO;
 import com.lingyi.ai.model.dto.EcommerceDataDTO;
 import com.lingyi.ai.model.dto.SmartReportRequestDTO;
@@ -13,6 +14,7 @@ import com.lingyi.ai.service.DailyReportService;
 import com.lingyi.ai.service.ai.AiAnalysisService;
 import com.lingyi.ai.service.smart.SmartReportConfigService;
 import com.lingyi.ai.service.smart.SmartReportEngineService;
+import com.lingyi.ai.service.smart.SmartRuleConfigService;
 import com.lingyi.ai.web.scheduler.DailyReportScheduler;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * 通用结果封装
@@ -51,6 +54,9 @@ public class CommonController {
 
     @Resource
     private SmartReportConfigService smartReportConfigService;
+
+    @Resource
+    private SmartRuleConfigService smartRuleConfigService;
 
     /**
      * 批量生成测试数据（近 N 天）
@@ -154,8 +160,6 @@ public class CommonController {
         log.info("收到智能报告分析请求，日期：{}，是否有业务数据：{}", request.getReportDate(), !request.isDataMissing());
         try {
             SmartReportResultVO result = smartReportEngineService.analyze(request);
-            // 分析成功后自动保存配置（含阈值和已加载的业务数据）
-            smartReportConfigService.saveConfig(toConfigDO(request));
             return Result.success(result);
         } catch (Exception e) {
             log.error("智能报告分析失败", e);
@@ -181,10 +185,6 @@ public class CommonController {
                         // client disconnected
                     }
                 });
-                // 分析成功后自动保存配置并推送结果
-                emitter.send(SseEmitter.event().name("progress")
-                    .data("{\"step\":\"saving\",\"message\":\"正在保存分析配置到数据库...\"}"));
-                smartReportConfigService.saveConfig(toConfigDO(req));
                 emitter.send(SseEmitter.event().name("result").data(result));
                 emitter.complete();
             } catch (Exception e) {
@@ -196,7 +196,40 @@ public class CommonController {
     }
 
     /**
-     * 保存智能报告配置（规则阈值 + 业务数据）
+     * 保存全局规则阈值
+     */
+    @PostMapping("/smart-report/rule-config/save")
+    public Result<Void> saveSmartRuleConfig(@RequestBody SmartRuleConfigDO config) {
+        if (config == null || config.getR1Threshold() == null) {
+            return Result.error("请求体不能为空");
+        }
+        log.info("收到保存全局规则阈值请求");
+        try {
+            smartRuleConfigService.saveConfig(config);
+            return Result.success(null);
+        } catch (Exception e) {
+            log.error("保存全局规则阈值失败", e);
+            return Result.error("保存失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 加载全局规则阈值
+     */
+    @GetMapping("/smart-report/rule-config/load")
+    public Result<SmartRuleConfigDO> loadSmartRuleConfig() {
+        log.info("收到加载全局规则阈值请求");
+        try {
+            SmartRuleConfigDO config = smartRuleConfigService.loadConfig();
+            return Result.success(config);
+        } catch (Exception e) {
+            log.error("加载全局规则阈值失败", e);
+            return Result.error("加载失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 保存智能报告配置（业务数据）
      */
     @PostMapping("/smart-report/config/save")
     public Result<Void> saveSmartReportConfig(@RequestBody SmartReportRequestDTO request) {
@@ -211,13 +244,14 @@ public class CommonController {
     }
 
     /**
-     * 加载最新智能报告配置（仅返回阈值字段供前端展示）
+     * 加载指定日期的智能报告业务数据（默认当天）
      */
     @GetMapping("/smart-report/config/load")
-    public Result<SmartReportConfigDO> loadSmartReportConfig() {
-        log.info("收到加载智能报告配置请求");
+    public Result<SmartReportConfigDO> loadSmartReportConfig(@RequestParam(name = "date", required = false) String date) {
+        log.info("收到加载智能报告配置请求，date={}", date);
         try {
-            SmartReportConfigDO config = smartReportConfigService.loadLatest();
+            LocalDate loadDate = date != null ? LocalDate.parse(date) : LocalDate.now();
+            SmartReportConfigDO config = smartReportConfigService.loadByDate(loadDate);
             return Result.success(config);
         } catch (Exception e) {
             log.error("加载智能报告配置失败", e);
@@ -264,6 +298,7 @@ public class CommonController {
 
     private SmartReportConfigDO toConfigDO(SmartReportRequestDTO request) {
         SmartReportConfigDO config = new SmartReportConfigDO();
+        config.setReportDate(request.getReportDate());
         config.setTodayRevenue(request.getTodayRevenue());
         config.setYesterdayRevenue(request.getYesterdayRevenue());
         config.setTodayOrders(request.getTodayOrders());

@@ -315,8 +315,9 @@ body {
 .loading-overlay.show { display: flex; }
 .loading-card {
   background: white; border-radius: var(--radius);
-  padding: 32px 40px; text-align: center;
+  padding: 28px 36px; text-align: center;
   box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  min-width: 300px;
 }
 .spinner {
   width: 32px; height: 32px; margin: 0 auto 14px;
@@ -324,8 +325,30 @@ body {
   border-radius: 50%; animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+.step-list { text-align: left; min-width: 220px; }
+.step-item { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; transition: all 0.15s; }
+.step-dot {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid var(--border2); background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; transition: all 0.2s;
+}
+.step-item.done .step-dot {
+  background: var(--green); border-color: var(--green);
+}
+.step-item.done .step-dot::after { content: '✓'; color: white; font-size: 10px; font-weight: 700; }
+.step-item.active .step-dot {
+  border-color: var(--blue); border-width: 3px;
+  animation: pulse-dot 1s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 79, 191, 0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(26, 79, 191, 0); }
+}
+.step-item.done .step-label { color: var(--green); }
+.step-item.active .step-label { color: var(--text); font-weight: 600; }
+.step-item.pending .step-label { color: var(--text3); }
 .loading-card p { font-size: 14px; font-weight: 500; color: var(--text); }
-.loading-card .sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
 
 @media (max-width: 960px) {
   .shell { grid-template-columns: 1fr; }
@@ -553,8 +576,14 @@ body {
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-card">
     <div class="spinner"></div>
-    <p>AI 分析中</p>
-    <div class="sub">正在生成诊断结论与运营建议</div>
+    <p style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text);">分析进度</p>
+    <div class="step-list" id="stepList">
+      <div class="step-item" data-step="loading"><span class="step-dot"></span><span class="step-label">加载业务数据</span></div>
+      <div class="step-item" data-step="ai_analysis"><span class="step-dot"></span><span class="step-label">AI 正在分析诊断</span></div>
+      <div class="step-item" data-step="parsing"><span class="step-dot"></span><span class="step-label">解析分析结果</span></div>
+      <div class="step-item" data-step="saving"><span class="step-dot"></span><span class="step-label">保存分析配置</span></div>
+      <div class="step-item" data-step="complete"><span class="step-dot"></span><span class="step-label">分析完成</span></div>
+    </div>
   </div>
 </div>
 
@@ -608,6 +637,7 @@ function getRuleValues() {
 
 function showLoading(show) {
   document.getElementById('loadingOverlay').classList.toggle('show', show);
+  if (show) resetProgress();
 }
 
 function fmtNum(n) {
@@ -717,28 +747,68 @@ function showResult(show) {
 
 async function analyze() {
   const btn = document.getElementById('analyzeBtn');
-
   const rules = getRuleValues();
 
-  document.getElementById('diagnosisConclusion').textContent = '';
-  document.getElementById('operationDiagnosis').textContent = '';
+  document.getElementById('diagnosisConclusion').innerHTML = '';
+  document.getElementById('operationDiagnosis').innerHTML = '';
 
   showLoading(true);
+  updateProgress('loading', '正在加载业务数据...');
   btn.disabled = true;
   btn.textContent = '分析中...';
 
   try {
-    const resp = await fetch(API_BASE + '/smart-report/analyze', {
+    const resp = await fetch(API_BASE + '/smart-report/analyze-stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(rules)
     });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const data = await resp.json();
-    if (data.code === 200 && data.data) {
-      renderResult(data.data);
+    if (!resp.body) throw new Error('浏览器不支持流式读取');
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let resultData = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop() || '';
+
+      for (const part of parts) {
+        const lines = part.split('\n');
+        let eventType = 'message';
+        let dataStr = '';
+
+        for (const line of lines) {
+          if (line.startsWith('event:')) {
+            eventType = line.slice(6).trim();
+          } else if (line.startsWith('data:')) {
+            dataStr = line.slice(5).trim();
+          }
+        }
+
+        if (!dataStr) continue;
+
+        if (eventType === 'progress') {
+          const payload = JSON.parse(dataStr);
+          updateProgress(payload.step, payload.message);
+        } else if (eventType === 'result') {
+          resultData = JSON.parse(dataStr);
+        }
+      }
+    }
+
+    if (resultData) {
+      // 短暂停留让用户看到"分析完成"
+      await new Promise(r => setTimeout(r, 600));
+      renderResult(resultData);
     } else {
-      throw new Error(data.message || '请求失败');
+      throw new Error('未获取到分析结果');
     }
   } catch (e) {
     showToast('请求失败：' + e.message, true);
@@ -748,6 +818,29 @@ async function analyze() {
     btn.disabled = false;
     btn.textContent = '开始分析';
   }
+}
+
+function updateProgress(step, message) {
+  const order = ['loading','ai_analysis','parsing','saving','complete'];
+  const idx = order.indexOf(step);
+  if (idx < 0) return;
+  const items = document.querySelectorAll('.step-item');
+  items.forEach((el, i) => {
+    el.classList.remove('done', 'active', 'pending');
+    if (i < idx) el.classList.add('done');
+    else if (i === idx) el.classList.add('active');
+    else el.classList.add('pending');
+  });
+}
+
+function resetProgress() {
+  document.querySelectorAll('.step-item').forEach(el => {
+    el.classList.remove('done', 'active');
+    el.classList.add('pending');
+  });
+  // First step active
+  const first = document.querySelector('.step-item');
+  if (first) { first.classList.remove('pending'); first.classList.add('active'); }
 }
 
 function renderResult(data) {
@@ -815,12 +908,14 @@ function renderTableContent(items) {
     const line = items[i].trim();
     // Detect table rows: lines that start with |
     if (line.startsWith('|') && line.endsWith('|')) {
+      // Skip separator rows like |---|---|
+      if (/^\|[-:\s|]+\|$/.test(line)) continue;
       if (!inTable) {
         html += '<table class="od-table"><thead><tr>';
         inTable = true;
       }
       const cells = line.split('|').filter(c => c.trim() !== '');
-      // First row is header, rest are body
+      // First table row is header, rest are body
       if (html.includes('</thead>')) {
         html += '<tr>' + cells.map(c => '<td>' + escHtml(c.trim()) + '</td>').join('') + '</tr>';
       } else {

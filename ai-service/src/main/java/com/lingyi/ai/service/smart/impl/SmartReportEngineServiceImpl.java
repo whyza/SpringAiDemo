@@ -41,7 +41,13 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
 
     @Override
     public SmartReportResultVO analyze(SmartReportRequestDTO request) {
+        return analyze(request, step -> {});
+    }
+
+    @Override
+    public SmartReportResultVO analyze(SmartReportRequestDTO request, java.util.function.Consumer<String> progress) {
         // 前端未传业务数据时，从数据库加载
+        progress.accept("{\"step\":\"loading\",\"message\":\"正在从数据库加载业务数据...\"}");
         if (request.isDataMissing()) {
             SmartReportConfigDO config = smartReportConfigService.loadLatest();
             if (config != null && config.getTodayRevenue() != null) {
@@ -49,10 +55,9 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 fillFromConfig(request, config);
             } else {
                 // 降级：从 daily_report 加载最新记录
-                DailyReportDO daily = dailyReportMapper.selectOne(
-                        new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<DailyReportDO>()
-                                .orderByDesc(DailyReportDO::getReportDate)
-                                .last("LIMIT 1"));
+                DailyReportDO daily = dailyReportMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<DailyReportDO>()
+                        .orderByDesc(DailyReportDO::getReportDate)
+                        .last("LIMIT 1"));
                 if (daily != null) {
                     log.info("从 daily_report 加载业务数据，date={}", daily.getReportDate());
                     request.setTodayRevenue(daily.getTodayRevenue());
@@ -63,11 +68,10 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                     request.setTodayFallingLinks(daily.getFallingLinks());
                     request.setTodayNoOrderLinks(daily.getNoOrderLinks());
                     // 昨日链接数从更早的记录获取
-                    DailyReportDO prevDaily = dailyReportMapper.selectOne(
-                            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<DailyReportDO>()
-                                    .lt(DailyReportDO::getReportDate, daily.getReportDate())
-                                    .orderByDesc(DailyReportDO::getReportDate)
-                                    .last("LIMIT 1"));
+                    DailyReportDO prevDaily = dailyReportMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<DailyReportDO>()
+                            .lt(DailyReportDO::getReportDate, daily.getReportDate())
+                            .orderByDesc(DailyReportDO::getReportDate)
+                            .last("LIMIT 1"));
                     if (prevDaily != null) {
                         request.setYesterdayRisingLinks(prevDaily.getRisingLinks());
                         request.setYesterdayFallingLinks(prevDaily.getFallingLinks());
@@ -80,8 +84,19 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         }
         request.applyDefaults();
 
-        String diagnosisConclusionText = generateDiagnosisConclusion(request);
-        String operationDiagnosisText = generateOperationDiagnosis(request, diagnosisConclusionText);
+        progress.accept("{\"step\":\"ai_analysis\",\"message\":\"AI 正在分析诊断数据...\"}");
+        String fullResponse = generateFullReport(request);
+        progress.accept("{\"step\":\"parsing\",\"message\":\"正在提取诊断结论和运营建议...\"}");
+        String diagnosisConclusionText = "";
+        String operationDiagnosisText = "";
+        String marker = "## 运营诊断报告";
+        int idx = fullResponse.indexOf(marker);
+        if (idx >= 0) {
+            diagnosisConclusionText = fullResponse.substring(0, idx).replace("## 诊断结论", "").trim();
+            operationDiagnosisText = fullResponse.substring(idx + marker.length()).trim();
+        } else {
+            diagnosisConclusionText = fullResponse;
+        }
         StructuredDiagnosis structuredDiagnosis = parseStructuredDiagnosis(
                 operationDiagnosisText,
                 diagnosisConclusionText
@@ -90,7 +105,7 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         SmartReportResultVO result = new SmartReportResultVO();
         result.setDiagnosisConclusionText(diagnosisConclusionText);
         result.setOperationDiagnosisText(operationDiagnosisText);
-//        result.setFullModelResponse(diagnosisConclusionText + "\n" + operationDiagnosisText);
+        //        result.setFullModelResponse(diagnosisConclusionText + "\n" + operationDiagnosisText);
 
         SmartReportResultVO.DiagnosisConclusionVO diagnosisConclusion = new SmartReportResultVO.DiagnosisConclusionVO();
         diagnosisConclusion.setRedAlerts(structuredDiagnosis.getRedAlerts());
@@ -104,13 +119,15 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         operationDiagnosis.setAnomalyLogicJudgment(structuredDiagnosis.getAnomalyLogicJudgment());
         operationDiagnosis.setOperationSuggestions(structuredDiagnosis.getOperationSuggestions());
         result.setOperationDiagnosis(operationDiagnosis);
+        progress.accept("{\"step\":\"complete\",\"message\":\"分析完成\"}");
         return result;
     }
 
-    private String generateDiagnosisConclusion(SmartReportRequestDTO req) {
+    private String generateFullReport(SmartReportRequestDTO req) {
         String systemPrompt = """
-                你是一位亚马逊运营诊断助手。
-                你需要严格根据输入数据和给定规则，输出固定格式的诊断结论。
+                你是一位亚马逊运营诊断顾问。请根据输入数据生成完整的店铺诊断报告。
+                
+                ## 第一部分：诊断结论 - 严格遵循以下格式
                 
                 规则要求：
                 1. 只允许使用以下规则名称：
@@ -125,23 +142,8 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 7. 如果没有任何规则触发，只输出：📋 本日数据平稳，暂无明显异常
                 8. 只能依据输入数据和规则阈值判断，不能编造事实，不能补充解释。
                 
-                除规定格式外，不要输出任何其他内容。
-                """;
-
-        String userPrompt = buildDiagnosisConclusionPrompt(req);
-        try {
-            return aiAnalysisService.callAiAnalysis(systemPrompt, userPrompt);
-        } catch (Exception e) {
-            log.warn("AI 生成诊断结论失败，使用本地规则降级", e);
-            return buildFallbackDiagnosisConclusion(req);
-        }
-    }
-
-    private String generateOperationDiagnosis(SmartReportRequestDTO req, String diagnosisConclusion) {
-        String systemPrompt = """
-                你是一位资深亚马逊电商运营顾问，请根据以下数据为卖家生成今日店铺健康诊断日报。
-
-                ## 严格规则
+                ## 第二部分：运营诊断报告 - 严格遵循以下规则
+                
                 1. 禁止编造任何输入中不存在的数据，只能使用明确提供的数据
                 2. 禁止使用"系统检测"、"算法分析"、"AI 分析"等机械话术
                 3. 必须引用输入中的具体数字进行分析，不得笼统描述
@@ -149,61 +151,69 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 5. 语气专业通俗，站在卖家视角，像资深运营在跟卖家沟通
                 6. 数据不足以支撑某部分分析时，直接跳过，不要硬写
                 7. 直接输出报告正文，不要加"根据提供的数据"、"基于以上数据"等开场白
-                8. **每个指标须附带简明计算结果**（另起一行展示），格式如：
+                8. 每个指标须附带简明计算结果（另起一行展示），格式如：
                    - "销售额降幅 32.10%（昨日 ¥8,100 → 今日 ¥5,500）"
                    - "未出单占比 40.54%（未出单 75 / 总链接 185）"
-                   - "上涨链接占比 79.71%（上涨 110 / 总链接 138）"
-
-                ## 输出结构（严格按此顺序）
-
-                ① 整体表现：对比昨日今日销售额、订单降幅，精准计算客单价；通过客单价判断下滑是否为降价导致，直白说明是流量 / 转化真实缩水，结合自定义规则判定行情预警等级。每个指标另起一行展示简明计算结果。
-
+                
+                输出结构：
+                ① 整体表现：对比昨日今日销售额、订单降幅，精准计算客单价；通过客单价判断下滑是否为降价导致，直白说明是流量/转化真实缩水，结合自定义规则判定行情预警等级。每个指标另起一行展示简明计算结果。
                 ② 链接结构分析：用极简表格展示上涨、下跌、平稳、未出单链接 + 数量 + 占比；标注风险警告，对比昨日、今日未出单链接差值，算出新增哑火链接数量，判断店铺链接健康度、产品支撑能力。风险项用 ⚠️ 标记。
-
                 ③ 异常逻辑判断：根据涨跌链接分布，判断是个别链接问题还是店铺整体性下跌；分析行情下跌底层原因，罗列需要排查的亚马逊常见诱因。风险项用 ⚠️ 标记。
-
-                ④ 运营建议（必须有）：全部为低风险、可落地实操动作；区分排查优先级，区分平台原因 / 店铺原因，弱势行情禁止大幅改动，以排查、维稳、观察为主，语言直白通俗。正向建议用 ✅ 开头。
+                ④ 运营建议（必须有）：全部为低风险、可落地实操动作；区分排查优先级，区分平台原因/店铺原因，弱势行情禁止大幅改动，以排查、维稳、观察为主，语言直白通俗。正向建议用 ✅ 开头。
+                
+                ## 最终输出格式（严格按此顺序）
+                ## 诊断结论
+                🔴 **需立即关注：** ...
+                🟡 **值得关注：** ...
+                🟢 **本周运营状态良好！** ...
+                
+                ## 运营诊断报告
+                ① ...
+                ② ...
+                ③ ...
+                ④ ...
                 """;
 
-        String userPrompt = buildOperationDiagnosisPrompt(req, diagnosisConclusion);
+        String userPrompt = buildFullReportPrompt(req);
         try {
             return aiAnalysisService.callAiAnalysis(systemPrompt, userPrompt);
         } catch (Exception e) {
-            log.warn("AI 生成运营诊断失败，使用结构化模板降级", e);
-            return buildFallbackOperationDiagnosis(req, diagnosisConclusion);
+            log.warn("AI 生成完整报告失败，使用本地规则降级", e);
+            String fallbackDC = buildFallbackDiagnosisConclusion(req);
+            String fallbackOD = buildFallbackOperationDiagnosis(req, fallbackDC);
+            return "## 诊断结论\n" + fallbackDC + "\n\n## 运营诊断报告\n" + fallbackOD;
         }
     }
 
-    private String buildDiagnosisConclusionPrompt(SmartReportRequestDTO req) {
+    private String buildFullReportPrompt(SmartReportRequestDTO req) {
         int todayTotalLinks = calculateTodayTotalLinks(req);
-        return String.format("""
-                请基于以下数据和规则判断诊断结论。
-                ## 今日数据汇总
-                昨日销售额：%s 元
-                今日销售额：%s 元
-                昨日订单量：%d
-                今日订单量：%d
-                昨天销量上涨链接数：%d
-                当天销量上涨链接数：%d
-                昨天销量下跌链接数：%d
-                当天销量下跌链接数：%d
-                当天总链接数：%d
-                当天未出单链接数：%d
-                昨天未出单链接数：%d
-
-                ## 客户自定义规则（阈值百分比均为绝对值，AI 需自行计算实际值判断是否命中）
-                红色规则：
-                1. 销售额大幅下滑：销售额降幅 = (昨日销售额 - 当天销售额) ÷ 昨日销售额 × 100%%，该值 >= %s%% 时命中。
-                2. 大量链接下跌：下跌链接占比 = 当天下跌链接数 ÷ 当天总链接数 × 100%%，该值 >= %s%% 时命中。
-                3. 大量链接未出单：未出单链接占比 = 当天未出单链接数 ÷ 当天总链接数 × 100%%，该值 >= %s%% 时命中。
-                黄色规则：
-                1. 销售额小幅下滑：销售额降幅 = (昨日销售额 - 当天销售额) ÷ 昨日销售额 × 100%%，该值 >= %s%% 且 < %s%% 时命中。
-                2. 部分链接下跌：下跌链接占比 = 当天下跌链接数 ÷ 当天总链接数 × 100%%，该值 > 0 且 < %s%% 时命中。（与大量链接下跌互斥）
-                3. 部分链接未出单：未出单链接占比 = 当天未出单链接数 ÷ 当天总链接数 × 100%%，该值 > 0 且 < %s%% 时命中。（与大量链接未出单互斥）
-                绿色规则：
-                1. 销售额稳步增长：销售额增幅 = (当天销售额 - 昨日销售额) ÷ 昨日销售额 × 100%%，该值 >= %s%% 时命中。
-                2. 上涨链接占比亮眼：上涨链接占比 = 当天上涨链接数 ÷ 当天总链接数 × 100%%，该值 >= %s%% 时命中。
-                """,
+        return String.format(
+                """
+                        ## 今日数据汇总
+                        昨日销售额：%s 元
+                        今日销售额：%s 元
+                        昨日订单量：%d
+                        今日订单量：%d
+                        昨天销量上涨链接数：%d
+                        当天销量上涨链接数：%d
+                        昨天销量下跌链接数：%d
+                        当天销量下跌链接数：%d
+                        当天总链接数：%d
+                        当天未出单链接数：%d
+                        昨天未出单链接数：%d
+                        
+                        ## 客户自定义规则（阈值百分比均为绝对值，AI 自行计算判断是否命中）
+                        - 销售额大幅下滑：降幅 = (昨日 - 当天) ÷ 昨日 × 100%%，>= %s%% 触发
+                        - 大量链接下跌：下跌占比 = 当天下跌 ÷ 总链接 × 100%%，>= %s%% 触发
+                        - 大量链接未出单：未出单占比 = 当天未出单 ÷ 总链接 × 100%%，>= %s%% 触发
+                        - 销售额小幅下滑：降幅 = (昨日 - 当天) ÷ 昨日 × 100%%，>= %s%% 且 < R1 时触发
+                        - 部分链接下跌：下跌占比 = 当天下跌 ÷ 总链接 × 100%%，> 0 且 < %s%% 触发
+                        - 部分链接未出单：未出单占比 = 当天未出单 ÷ 总链接 × 100%%，> 0 且 < %s%% 触发
+                        - 销售额稳步增长：增幅 = (当天 - 昨日) ÷ 昨日 × 100%%，>= %s%% 触发
+                        - 上涨链接占比亮眼：上涨占比 = 当天上涨 ÷ 总链接 × 100%%，>= %s%% 触发
+                        
+                        请基于以上数据和规则，生成完整的店铺诊断报告。
+                        """,
                 formatAmount(req.getYesterdayRevenue()),
                 formatAmount(req.getTodayRevenue()),
                 safeInt(req.getYesterdayOrders()),
@@ -215,117 +225,15 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
                 todayTotalLinks,
                 safeInt(req.getTodayNoOrderLinks()),
                 safeInt(req.getYesterdayNoOrderLinks()),
+                // 规则阈值
                 formatAmount(req.getR1Threshold()),
                 formatAmount(req.getR2Threshold()),
                 formatAmount(req.getR3Threshold()),
                 formatAmount(req.getY1Threshold()),
-                formatAmount(req.getR1Threshold()),
                 formatAmount(req.getR2Threshold()),
                 formatAmount(req.getR3Threshold()),
                 formatAmount(req.getG1Threshold()),
                 formatAmount(req.getG2Threshold())
-        );
-    }
-
-    private String buildOperationDiagnosisPrompt(SmartReportRequestDTO req, String diagnosisConclusion) {
-        int todayTotalLinks = calculateTodayTotalLinks(req);
-        // 预计算关键指标
-        BigDecimal yesterdayRev = req.getYesterdayRevenue();
-        BigDecimal todayRev = req.getTodayRevenue();
-        String revDropPct = "0.00";
-        String revRisePct = "0.00";
-        if (yesterdayRev != null && todayRev != null && yesterdayRev.compareTo(BigDecimal.ZERO) > 0) {
-            revDropPct = yesterdayRev.subtract(todayRev)
-                    .multiply(BigDecimal.valueOf(100))
-                    .divide(yesterdayRev, 2, RoundingMode.HALF_UP)
-                    .toString();
-            revRisePct = todayRev.subtract(yesterdayRev)
-                    .multiply(BigDecimal.valueOf(100))
-                    .divide(yesterdayRev, 2, RoundingMode.HALF_UP)
-                    .toString();
-        }
-        String fallingLinkPct = "0.00";
-        if (todayTotalLinks > 0 && req.getTodayFallingLinks() != null) {
-            fallingLinkPct = BigDecimal.valueOf(req.getTodayFallingLinks() * 100L)
-                    .divide(BigDecimal.valueOf(todayTotalLinks), 2, RoundingMode.HALF_UP)
-                    .toString();
-        }
-        String noOrderLinkPct = "0.00";
-        if (todayTotalLinks > 0 && req.getTodayNoOrderLinks() != null) {
-            noOrderLinkPct = BigDecimal.valueOf(req.getTodayNoOrderLinks() * 100L)
-                    .divide(BigDecimal.valueOf(todayTotalLinks), 2, RoundingMode.HALF_UP)
-                    .toString();
-        }
-        String risingLinkPct = "0.00";
-        if (todayTotalLinks > 0 && req.getTodayRisingLinks() != null) {
-            risingLinkPct = BigDecimal.valueOf(req.getTodayRisingLinks() * 100L)
-                    .divide(BigDecimal.valueOf(todayTotalLinks), 2, RoundingMode.HALF_UP)
-                    .toString();
-        }
-        return String.format("""
-                ## 今日数据汇总
-                昨日销售额：%s 元
-                今日销售额：%s 元
-                昨日订单量：%d
-                今日订单量：%d
-                昨天销量上涨链接数：%d
-                当天销量上涨链接数：%d
-                昨天销量下跌链接数：%d
-                当天销量下跌链接数：%d
-                当天总链接数：%d
-                当天未出单链接数：%d
-                昨天未出单链接数：%d
-
-                ## 预计算关键指标（供输出时直接引用）
-                - 销售额降幅 %s%%（昨日 %s → 今日 %s）
-                - 销售额增幅 %s%%（今日 %s → 昨日 %s）
-                - 当天下跌链接占比 %s%%（下跌 %d / 总链接 %d）
-                - 当天未出单链接占比 %s%%（未出单 %d / 总链接 %d）
-                - 当天上涨链接占比 %s%%（上涨 %d / 总链接 %d）
-
-                ## 客户自定义规则（阈值百分比均为绝对值）
-                - 销售额大幅下滑：值 >= %s%% 时触发
-                - 大量链接下跌：值 >= %s%% 时触发
-                - 大量链接未出单：值 >= %s%% 时触发
-                - 销售额小幅下滑：值 >= %s%% 且 < %s%% 时触发
-                - 部分链接下跌：值 > 0 且 < %s%% 时触发
-                - 部分链接未出单：值 > 0 且 < %s%% 时触发
-                - 销售额稳步增长：值 >= %s%% 时触发
-                - 上涨链接占比亮眼：值 >= %s%% 时触发
-
-                ## 诊断结论
-                %s
-
-                请基于以上数据和规则，输出完整的运营诊断正文。
-                """,
-                formatAmount(yesterdayRev),
-                formatAmount(todayRev),
-                safeInt(req.getYesterdayOrders()),
-                safeInt(req.getTodayOrders()),
-                safeInt(req.getYesterdayRisingLinks()),
-                safeInt(req.getTodayRisingLinks()),
-                safeInt(req.getYesterdayFallingLinks()),
-                safeInt(req.getTodayFallingLinks()),
-                todayTotalLinks,
-                safeInt(req.getTodayNoOrderLinks()),
-                safeInt(req.getYesterdayNoOrderLinks()),
-                // 预计算指标
-                revDropPct, formatAmount(yesterdayRev), formatAmount(todayRev),
-                revRisePct, formatAmount(todayRev), formatAmount(yesterdayRev),
-                fallingLinkPct, safeInt(req.getTodayFallingLinks()), todayTotalLinks,
-                noOrderLinkPct, safeInt(req.getTodayNoOrderLinks()), todayTotalLinks,
-                risingLinkPct, safeInt(req.getTodayRisingLinks()), todayTotalLinks,
-                // 阈值
-                formatAmount(req.getR1Threshold()),
-                formatAmount(req.getR2Threshold()),
-                formatAmount(req.getR3Threshold()),
-                formatAmount(req.getY1Threshold()),
-                formatAmount(req.getR1Threshold()),
-                formatAmount(req.getR2Threshold()),
-                formatAmount(req.getR3Threshold()),
-                formatAmount(req.getG1Threshold()),
-                formatAmount(req.getG2Threshold()),
-                diagnosisConclusion
         );
     }
 
@@ -355,17 +263,33 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         content.append("① 整体表现：");
         content.append("今日销售额 ").append(formatAmount(req.getTodayRevenue())).append(" 元，昨日销售额 ").append(
                 formatAmount(req.getYesterdayRevenue())).append(" 元，变化 ").append(revenueChange).append("。");
-        content.append("今日订单量 ").append(safeInt(req.getTodayOrders())).append(" 单，昨日订单量 ").append(safeInt(
-                req.getYesterdayOrders())).append(" 单。");
-        content.append("今日总链接数 ").append(todayTotalLinks).append("，昨日总链接数 ").append(yesterdayTotalLinks).append("。\n\n");
+        content
+                .append("今日订单量 ")
+                .append(safeInt(req.getTodayOrders()))
+                .append(" 单，昨日订单量 ")
+                .append(safeInt(req.getYesterdayOrders()))
+                .append(" 单。");
+        content
+                .append("今日总链接数 ")
+                .append(todayTotalLinks)
+                .append("，昨日总链接数 ")
+                .append(yesterdayTotalLinks)
+                .append("。\n\n");
 
         // ② 链接结构分析
         content.append("② 链接结构分析：");
-        content.append("上涨 ").append(safeInt(req.getTodayRisingLinks())).append(" 个，下跌 ").append(safeInt(
-                req.getTodayFallingLinks())).append(" 个，未出单 ").append(safeInt(req.getTodayNoOrderLinks())).append(" 个，总链接 ")
-                .append(todayTotalLinks).append(" 个。");
-        content.append("昨日未出单 ").append(safeInt(req.getYesterdayNoOrderLinks())).append(" 个，未出单变化 ")
-                .append(safeInt(req.getTodayNoOrderLinks()) - safeInt(req.getYesterdayNoOrderLinks())).append(" 个。\n\n");
+        content
+                .append("上涨 ")
+                .append(safeInt(req.getTodayRisingLinks()))
+                .append(" 个，下跌 ")
+                .append(safeInt(req.getTodayFallingLinks()))
+                .append(" 个，未出单 ")
+                .append(safeInt(req.getTodayNoOrderLinks()))
+                .append(" 个，总链接 ")
+                .append(todayTotalLinks)
+                .append(" 个。");
+        content.append("昨日未出单 ").append(safeInt(req.getYesterdayNoOrderLinks())).append(" 个，未出单变化 ").append(
+                safeInt(req.getTodayNoOrderLinks()) - safeInt(req.getYesterdayNoOrderLinks())).append(" 个。\n\n");
 
         // ③ 异常逻辑判断
         content.append("③ 异常逻辑判断：");
@@ -600,12 +524,24 @@ public class SmartReportEngineServiceImpl implements SmartReportEngineService {
         request.setYesterdayFallingLinks(config.getYesterdayFallingLinks());
         request.setTodayNoOrderLinks(config.getTodayNoOrderLinks());
         request.setYesterdayNoOrderLinks(config.getYesterdayNoOrderLinks());
-        if (config.getR1Threshold() != null) request.setR1Threshold(config.getR1Threshold());
-        if (config.getR2Threshold() != null) request.setR2Threshold(config.getR2Threshold());
-        if (config.getR3Threshold() != null) request.setR3Threshold(config.getR3Threshold());
-        if (config.getY1Threshold() != null) request.setY1Threshold(config.getY1Threshold());
-        if (config.getG1Threshold() != null) request.setG1Threshold(config.getG1Threshold());
-        if (config.getG2Threshold() != null) request.setG2Threshold(config.getG2Threshold());
+        if (config.getR1Threshold() != null) {
+            request.setR1Threshold(config.getR1Threshold());
+        }
+        if (config.getR2Threshold() != null) {
+            request.setR2Threshold(config.getR2Threshold());
+        }
+        if (config.getR3Threshold() != null) {
+            request.setR3Threshold(config.getR3Threshold());
+        }
+        if (config.getY1Threshold() != null) {
+            request.setY1Threshold(config.getY1Threshold());
+        }
+        if (config.getG1Threshold() != null) {
+            request.setG1Threshold(config.getG1Threshold());
+        }
+        if (config.getG2Threshold() != null) {
+            request.setG2Threshold(config.getG2Threshold());
+        }
     }
 
     @Data

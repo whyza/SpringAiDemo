@@ -37,11 +37,11 @@ public class SmartReportResultVO {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String diagnosisConclusionText;
 
-    /**
-     * 完整模型返回内容（诊断结论 + 运营诊断）
-     */
-    @JsonProperty("完整模型返回")
-    private String fullModelResponse;
+//    /**
+//     * 完整模型返回内容（诊断结论 + 运营诊断）
+//     */
+//    @JsonProperty("完整模型返回")
+//    private String fullModelResponse;
 
     @Data
     public static class DiagnosisConclusionVO {

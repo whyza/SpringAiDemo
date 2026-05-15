@@ -1,9 +1,6 @@
 package com.lingyi.ai.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -20,44 +17,15 @@ public class SmartReportRequestDTO {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate reportDate = LocalDate.now();
 
-    @NotNull(message = "当天销售额不能为空")
-    @DecimalMin(value = "0", message = "当天销售额不能为负数")
     private BigDecimal todayRevenue;
-
-    @NotNull(message = "昨日销售额不能为空")
-    @DecimalMin(value = "0", message = "昨日销售额不能为负数")
     private BigDecimal yesterdayRevenue;
-
-    @NotNull(message = "当天订单量不能为空")
-    @Min(value = 0, message = "当天订单量不能为负数")
     private Integer todayOrders;
-
-    @NotNull(message = "昨日订单量不能为空")
-    @Min(value = 0, message = "昨日订单量不能为负数")
     private Integer yesterdayOrders;
-
-    @NotNull(message = "今日销量上涨链接数不能为空")
-    @Min(value = 0, message = "链接数不能为负数")
     private Integer todayRisingLinks;
-
-    @NotNull(message = "昨日销量上涨链接数不能为空")
-    @Min(value = 0, message = "链接数不能为负数")
     private Integer yesterdayRisingLinks;
-
-    @NotNull(message = "今日销量下跌链接数不能为空")
-    @Min(value = 0, message = "链接数不能为负数")
     private Integer todayFallingLinks;
-
-    @NotNull(message = "昨日销量下跌链接数不能为空")
-    @Min(value = 0, message = "链接数不能为负数")
     private Integer yesterdayFallingLinks;
-
-    @NotNull(message = "今日未出单链接数不能为空")
-    @Min(value = 0, message = "链接数不能为负数")
     private Integer todayNoOrderLinks;
-
-    @NotNull(message = "昨日未出单链接数不能为空")
-    @Min(value = 0, message = "链接数不能为负数")
     private Integer yesterdayNoOrderLinks;
 
     /**
@@ -114,4 +82,16 @@ public class SmartReportRequestDTO {
             g2Threshold = BigDecimal.valueOf(40);
         }
     }
+
+    /**
+     * 判断是否缺少业务数据（前端没传值）
+     */
+    public boolean isDataMissing() {
+        return todayRevenue == null && yesterdayRevenue == null
+                && todayOrders == null && yesterdayOrders == null
+                && todayRisingLinks == null && yesterdayRisingLinks == null
+                && todayFallingLinks == null && yesterdayFallingLinks == null
+                && todayNoOrderLinks == null && yesterdayNoOrderLinks == null;
+    }
+
 }

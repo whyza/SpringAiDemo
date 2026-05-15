@@ -1,6 +1,7 @@
 package com.lingyi.ai.web.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.lingyi.ai.dal.dataobject.SmartReportConfigDO;
 import com.lingyi.ai.model.dto.DailyReportQueryDTO;
 import com.lingyi.ai.model.dto.EcommerceDataDTO;
 import com.lingyi.ai.model.dto.SmartReportRequestDTO;
@@ -10,6 +11,7 @@ import com.lingyi.ai.model.vo.DailyReportPushVO;
 import com.lingyi.ai.model.vo.SmartReportResultVO;
 import com.lingyi.ai.service.DailyReportService;
 import com.lingyi.ai.service.ai.AiAnalysisService;
+import com.lingyi.ai.service.smart.SmartReportConfigService;
 import com.lingyi.ai.service.smart.SmartReportEngineService;
 import com.lingyi.ai.web.scheduler.DailyReportScheduler;
 import jakarta.annotation.Resource;
@@ -43,6 +45,9 @@ public class CommonController {
 
     @Resource
     private SmartReportEngineService smartReportEngineService;
+
+    @Resource
+    private SmartReportConfigService smartReportConfigService;
 
     /**
      * 批量生成测试数据（近 N 天）
@@ -133,19 +138,55 @@ public class CommonController {
 
     /**
      * 智能报告分析（规则引擎 + AI 运营建议）
+     * <p>未传业务数据时自动从数据库加载最新配置</p>
      *
-     * @param request 包含销售指标和规则阈值的请求
+     * @param request 包含销售指标和规则阈值的请求（可选）
      * @return 触发规则、诊断摘要和 AI 建议
      */
     @PostMapping("/smart-report/analyze")
-    public Result<SmartReportResultVO> analyzeSmartReport(@RequestBody @Validated SmartReportRequestDTO request) {
-        log.info("收到智能报告分析请求，日期：{}", request.getReportDate());
+    public Result<SmartReportResultVO> analyzeSmartReport(@RequestBody(required = false) SmartReportRequestDTO request) {
+        if (request == null) {
+            request = new SmartReportRequestDTO();
+        }
+        log.info("收到智能报告分析请求，日期：{}，是否有业务数据：{}", request.getReportDate(), !request.isDataMissing());
         try {
             SmartReportResultVO result = smartReportEngineService.analyze(request);
+            // 分析成功后自动保存配置（含阈值和已加载的业务数据）
+            smartReportConfigService.saveConfig(toConfigDO(request));
             return Result.success(result);
         } catch (Exception e) {
             log.error("智能报告分析失败", e);
             return Result.error("智能报告分析失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 保存智能报告配置（规则阈值 + 业务数据）
+     */
+    @PostMapping("/smart-report/config/save")
+    public Result<Void> saveSmartReportConfig(@RequestBody SmartReportRequestDTO request) {
+        log.info("收到保存智能报告配置请求");
+        try {
+            smartReportConfigService.saveConfig(toConfigDO(request));
+            return Result.success(null);
+        } catch (Exception e) {
+            log.error("保存智能报告配置失败", e);
+            return Result.error("保存失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 加载最新智能报告配置（仅返回阈值字段供前端展示）
+     */
+    @GetMapping("/smart-report/config/load")
+    public Result<SmartReportConfigDO> loadSmartReportConfig() {
+        log.info("收到加载智能报告配置请求");
+        try {
+            SmartReportConfigDO config = smartReportConfigService.loadLatest();
+            return Result.success(config);
+        } catch (Exception e) {
+            log.error("加载智能报告配置失败", e);
+            return Result.error("加载失败：" + e.getMessage());
         }
     }
 
@@ -184,6 +225,27 @@ public class CommonController {
             log.error("周期总结失败", e);
             return Result.error("周期总结失败：" + e.getMessage());
         }
+    }
+
+    private SmartReportConfigDO toConfigDO(SmartReportRequestDTO request) {
+        SmartReportConfigDO config = new SmartReportConfigDO();
+        config.setTodayRevenue(request.getTodayRevenue());
+        config.setYesterdayRevenue(request.getYesterdayRevenue());
+        config.setTodayOrders(request.getTodayOrders());
+        config.setYesterdayOrders(request.getYesterdayOrders());
+        config.setTodayRisingLinks(request.getTodayRisingLinks());
+        config.setYesterdayRisingLinks(request.getYesterdayRisingLinks());
+        config.setTodayFallingLinks(request.getTodayFallingLinks());
+        config.setYesterdayFallingLinks(request.getYesterdayFallingLinks());
+        config.setTodayNoOrderLinks(request.getTodayNoOrderLinks());
+        config.setYesterdayNoOrderLinks(request.getYesterdayNoOrderLinks());
+        config.setR1Threshold(request.getR1Threshold());
+        config.setR2Threshold(request.getR2Threshold());
+        config.setR3Threshold(request.getR3Threshold());
+        config.setY1Threshold(request.getY1Threshold());
+        config.setG1Threshold(request.getG1Threshold());
+        config.setG2Threshold(request.getG2Threshold());
+        return config;
     }
 
     /**

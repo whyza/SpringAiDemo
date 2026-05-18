@@ -757,8 +757,11 @@ body {
           <div class="data-item"><span class="data-label">当天订单量</span><span class="data-value mono" id="dispTodayOrd">-</span></div>
           <div class="data-item"><span class="data-label">昨日订单量</span><span class="data-value mono" id="dispYestOrd">-</span></div>
           <div class="data-item"><span class="data-label">上涨链接</span><span class="data-value up" id="dispRising">-</span></div>
+          <div class="data-item"><span class="data-label">昨日上涨链接</span><span class="data-value up" id="dispYestRising">-</span></div>
           <div class="data-item"><span class="data-label">下跌链接</span><span class="data-value down" id="dispFalling">-</span></div>
+          <div class="data-item"><span class="data-label">昨日下跌链接</span><span class="data-value down" id="dispYestFalling">-</span></div>
           <div class="data-item"><span class="data-label">未出单链接</span><span class="data-value warn" id="dispNoOrder">-</span></div>
+          <div class="data-item"><span class="data-label">昨日未出单链接</span><span class="data-value warn" id="dispYestNoOrder">-</span></div>
         </div>
       </div>
 
@@ -1078,8 +1081,11 @@ function updateDataDisplay(d) {
     document.getElementById('dispTodayOrd').textContent = '-';
     document.getElementById('dispYestOrd').textContent = '-';
     document.getElementById('dispRising').textContent = '-';
+    document.getElementById('dispYestRising').textContent = '-';
     document.getElementById('dispFalling').textContent = '-';
+    document.getElementById('dispYestFalling').textContent = '-';
     document.getElementById('dispNoOrder').textContent = '-';
+    document.getElementById('dispYestNoOrder').textContent = '-';
     return;
   }
   document.getElementById('dispDate').textContent = d.reportDate || new Date().toISOString().slice(0,10);
@@ -1088,8 +1094,11 @@ function updateDataDisplay(d) {
   document.getElementById('dispTodayOrd').textContent = fmtNum(d.todayOrders);
   document.getElementById('dispYestOrd').textContent = fmtNum(d.yesterdayOrders);
   document.getElementById('dispRising').textContent = fmtNum(d.todayRisingLinks);
+  document.getElementById('dispYestRising').textContent = fmtNum(d.yesterdayRisingLinks);
   document.getElementById('dispFalling').textContent = fmtNum(d.todayFallingLinks);
+  document.getElementById('dispYestFalling').textContent = fmtNum(d.yesterdayFallingLinks);
   document.getElementById('dispNoOrder').textContent = fmtNum(d.todayNoOrderLinks);
+  document.getElementById('dispYestNoOrder').textContent = fmtNum(d.yesterdayNoOrderLinks);
 }
 
 async function loadDemo(key) {

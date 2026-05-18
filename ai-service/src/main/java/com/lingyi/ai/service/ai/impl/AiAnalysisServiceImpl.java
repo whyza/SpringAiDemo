@@ -1,5 +1,6 @@
 package com.lingyi.ai.service.ai.impl;
 
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.lingyi.ai.model.dto.EcommerceDataDTO;
 import com.lingyi.ai.model.vo.DailyReportPushVO;
 import com.lingyi.ai.service.DailyReportService;
@@ -25,6 +26,11 @@ import java.util.List;
 @Slf4j
 @Service
 public class AiAnalysisServiceImpl implements AiAnalysisService {
+
+    private static final DashScopeChatOptions MULTI_MODEL_OPTIONS = DashScopeChatOptions.builder()
+            .withModel("qwen3.6-plus")
+            .withMultiModel(Boolean.TRUE)
+            .build();
 
     public static final String SYSTEM_PROMPT = """
             你是一名电商运营人员，负责分析每日数据。你**只能**使用用户输入的实际数据，以下是绝对规则：
@@ -97,7 +103,8 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
     public String callAiAnalysis(String systemPrompt, String userPrompt) {
         log.info("调用 AI 分析，system 长度：{}, user 长度：{}", systemPrompt.length(), userPrompt.length());
         try {
-            Prompt prompt = new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userPrompt)));
+            Prompt prompt = new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userPrompt)),
+                    MULTI_MODEL_OPTIONS);
             String result = chatModel.call(prompt).getResult().getOutput().getContent();
             log.info("AI 分析完成");
             return result;

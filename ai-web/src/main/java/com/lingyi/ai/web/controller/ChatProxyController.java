@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets;
 @RequestMapping("/v1/chat")
 public class ChatProxyController {
 
-    private static final String API_KEY = "sk-307deede4e4847fbab1cff6f6e0d064d";
+    private static final String API_KEY = "";
     private static final String ALI_URL = "https://ws-mbwk291770zz1xc1.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/text-generation/generation";
 
     @RequestMapping("/completions")

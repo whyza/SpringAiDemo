@@ -1,2 +1,1 @@
-# SpringAiDemo
-学习学习SpringAiAlibaba
+# SpringAI-Sales-Analysis

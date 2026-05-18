@@ -208,21 +208,125 @@ body {
 .rp-hint { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text3); }
 .rp-hint-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
-.result-content { display: none; }
-.result-content.show { display: block; }
+.result-content {
+  display: none;
+  opacity: 0;
+  transform: translateY(18px);
+}
+.result-content.show {
+  display: block;
+  animation: resultReveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes resultReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 /* ===== 诊断结论卡片 ===== */
-.dc-section { border-radius: var(--radius); overflow: hidden; border: 1px solid; margin-bottom: 12px; }
+.dc-section {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid;
+  margin-bottom: 12px;
+  background: var(--surface);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.dc-section:hover {
+  transform: translateY(-1px);
+}
 .dc-header {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 16px; font-size: 13px; font-weight: 600;
 }
 .dc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .dc-badge { margin-left: auto; font-size: 11px; font-family: 'DM Mono', monospace; opacity: 0.7; }
+.dc-alert-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: white;
+  background: var(--red);
+  box-shadow: 0 6px 14px rgba(191,45,26,0.22);
+}
 
 .dc-section.dc-red { border-color: var(--red-mid); }
 .dc-section.dc-red .dc-header { background: var(--red-light); color: var(--red); border-bottom: 1px solid var(--red-mid); }
 .dc-section.dc-red .dc-dot { background: var(--red); }
+.dc-section.dc-red.critical-hit {
+  border-color: rgba(191,45,26,0.45);
+  background:
+    linear-gradient(180deg, rgba(252,236,234,0.88), rgba(255,255,255,0.98) 28%);
+  box-shadow: 0 18px 36px rgba(191,45,26,0.12);
+  position: relative;
+}
+.dc-section.dc-red.critical-hit::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: linear-gradient(180deg, #cf311d, #bf2d1a, #a82412);
+}
+.dc-section.dc-red.critical-hit .dc-header {
+  padding: 12px 16px 12px 20px;
+  background: linear-gradient(135deg, rgba(191,45,26,0.14), rgba(191,45,26,0.06));
+  color: #8e1d10;
+  border-bottom: 1px solid rgba(191,45,26,0.18);
+}
+.dc-section.dc-red.critical-hit .dc-dot {
+  width: 10px;
+  height: 10px;
+  box-shadow: 0 0 0 6px rgba(191,45,26,0.10);
+  animation: criticalPulse 1.7s ease-in-out infinite;
+}
+.dc-section.dc-red.critical-hit .dc-badge {
+  color: #8e1d10;
+  opacity: 1;
+  font-weight: 700;
+}
+.dc-section.dc-red.critical-hit .dc-list {
+  padding: 10px 10px 10px 14px;
+}
+.dc-section.dc-red.critical-hit .dc-list li {
+  margin: 0 0 8px 0;
+  padding: 12px 14px 12px 34px;
+  border: 1px solid rgba(191,45,26,0.10);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.72);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.65;
+}
+.dc-section.dc-red.critical-hit .dc-list li:last-child {
+  margin-bottom: 0;
+}
+.dc-section.dc-red.critical-hit .dc-list li + li {
+  border-top: 1px solid rgba(191,45,26,0.10);
+}
+.dc-section.dc-red.critical-hit .dc-list li::before {
+  left: 14px;
+  top: 18px;
+  width: 8px;
+  height: 8px;
+  background: var(--red);
+  box-shadow: 0 0 0 4px rgba(191,45,26,0.08);
+}
+@keyframes criticalPulse {
+  0%, 100% { box-shadow: 0 0 0 5px rgba(191,45,26,0.10); }
+  50% { box-shadow: 0 0 0 10px rgba(191,45,26,0.04); }
+}
 
 .dc-section.dc-amber { border-color: var(--amber-mid); }
 .dc-section.dc-amber .dc-header { background: var(--amber-light); color: var(--amber); border-bottom: 1px solid var(--amber-mid); }
@@ -319,59 +423,192 @@ body {
 .toast.error { background: var(--red); }
 
 .blur-active .split-left {
-  filter: blur(2px) brightness(0.98);
+  filter: blur(1px) saturate(0.92);
+  opacity: 0.58;
+  transform: scale(0.992);
   pointer-events: none;
-  transition: filter 0.4s ease;
+  transition: filter 0.35s ease, opacity 0.35s ease, transform 0.35s ease;
   user-select: none;
 }
 
-.analyze-progress-bar {
-  position: absolute; bottom: -10px; left: 0; right: 0; height: 3px;
-  background: var(--border);
-  z-index: 20; overflow: hidden; display: none;
-  border-radius: 0;
-}
-.analyze-progress-bar.active { display: block; }
-.analyze-progress-bar::after {
-  content: '';
-  position: absolute; top: 0; left: -40%; width: 40%; height: 100%;
-  background: linear-gradient(90deg, transparent, var(--blue), transparent);
-  animation: barMove 1.2s ease-in-out infinite;
-}
-@keyframes barMove {
-  0% { left: -40%; }
-  100% { left: 120%; }
-}
-
-
 .split-right {
-  transition: filter 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.blur-active .split-right {
+  transform: translateY(-2px);
 }
 
 /* Result progress (inline in right panel) */
 .result-progress {
   display: none;
+  position: relative;
+  background:
+    radial-gradient(circle at top right, rgba(26,79,191,0.08), transparent 32%),
+    linear-gradient(180deg, #ffffff, #fbfaf7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 22px 18px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(26, 25, 22, 0.06);
 }
 .result-progress.show {
   display: block;
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn 0.25s ease;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-.rp-title {
-  font-size: 15px; font-weight: 600; color: var(--text);
-  margin-bottom: 20px; letter-spacing: -0.01em;
+
+.result-progress::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.55) 45%, transparent 70%);
+  transform: translateX(-120%);
+  animation: progressSheen 2.4s ease-in-out infinite;
+  pointer-events: none;
 }
-.step-list { }
+@keyframes progressSheen {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+.rp-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 1;
+}
+.rp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--blue);
+  background: rgba(26,79,191,0.08);
+  border: 1px solid rgba(26,79,191,0.16);
+  margin-bottom: 10px;
+}
+.rp-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 0 6px rgba(26,79,191,0.08);
+  animation: statusPulse 1.5s ease-in-out infinite;
+}
+@keyframes statusPulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(26,79,191,0.10); }
+  50% { box-shadow: 0 0 0 9px rgba(26,79,191,0.04); }
+}
+.rp-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+.rp-subtitle {
+  font-size: 13px;
+  color: var(--text2);
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.rp-subtitle-text {
+  color: var(--text2);
+}
+.rp-subtitle-dots {
+  display: inline-block;
+  min-width: 18px;
+  color: var(--blue);
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 1px;
+}
+.rp-orbit {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  border: 1px solid rgba(26,79,191,0.14);
+  background: rgba(26,79,191,0.04);
+}
+.rp-orbit::before,
+.rp-orbit::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+}
+.rp-orbit::before {
+  inset: 10px;
+  border: 2px solid rgba(26,79,191,0.14);
+}
+.rp-orbit::after {
+  width: 10px;
+  height: 10px;
+  top: 6px;
+  left: 23px;
+  background: var(--blue);
+  box-shadow: 0 0 0 5px rgba(26,79,191,0.08);
+  transform-origin: 5px 22px;
+  animation: orbitSpin 1.8s linear infinite;
+}
+@keyframes orbitSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.rp-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+.rp-meta-card {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.72);
+}
+.rp-meta-label {
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 5px;
+}
+.rp-meta-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.step-list {
+  position: relative;
+  z-index: 1;
+}
 .step-item {
   display: flex; gap: 14px; position: relative;
-  padding: 0 0 24px 0;
+  padding: 14px 0;
+  border-top: 1px solid rgba(226,224,216,0.75);
 }
+.step-item:first-child { border-top: none; padding-top: 0; }
 .step-item:last-child { padding-bottom: 0; }
 .step-line {
-  position: absolute; left: 13px; top: 28px;
-  width: 2px; height: calc(100% - 28px);
-  background: var(--border); transition: background 0.3s;
+  position: absolute; left: 13px; top: 43px;
+  width: 2px; height: calc(100% - 18px);
+  background: linear-gradient(180deg, var(--border2), rgba(208,206,196,0.35));
+  transition: background 0.3s;
 }
 .step-item:last-child .step-line { display: none; }
 .step-item.done .step-line { background: var(--green); }
@@ -402,8 +639,17 @@ body {
   color: white;
 }
 
-.step-info { flex: 1; min-width: 0; padding-top: 3px; }
-.step-label { font-size: 14px; font-weight: 500; color: var(--text); }
+.step-info {
+  flex: 1;
+  min-width: 0;
+  padding-top: 3px;
+  overflow: hidden;
+}
+.step-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
 .step-item.pending .step-label { color: var(--text3); }
 .step-item.done .step-label { color: var(--green); }
 .step-desc {
@@ -412,6 +658,29 @@ body {
 }
 .step-item.pending .step-desc { color: var(--text3); }
 .step-item.active .step-desc { color: var(--blue); font-weight: 500; }
+.step-state {
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 11px;
+  color: var(--text3);
+  font-family: 'DM Mono', monospace;
+}
+.step-item.active .step-state { color: var(--blue); }
+.step-item.done .step-state { color: var(--green); }
+.headline-char {
+  display: inline-block;
+  white-space: pre;
+}
+.rp-subtitle-text.wave .headline-char {
+  animation: headlineWaveHop 1.5s ease-in-out infinite;
+  animation-delay: calc(var(--char-index, 0) * 0.055s);
+}
+@keyframes headlineWaveHop {
+  0%, 100% { transform: translateY(0); }
+  18% { transform: translateY(-6px); }
+  34% { transform: translateY(1px); }
+  48% { transform: translateY(-2px); }
+}
 
 @media (max-width: 960px) {
   .shell { grid-template-columns: 1fr; }
@@ -421,6 +690,8 @@ body {
   .content { padding: 20px 16px; }
   .rule-row { grid-template-columns: 1fr; gap: 8px; }
   .rr-ctrl { align-items: flex-start; }
+  .rp-meta { grid-template-columns: 1fr; }
+  .rp-orbit { display: none; }
 }
 </style>
 </head>
@@ -612,7 +883,6 @@ body {
       <div class="split-right">
 
       <div class="result-area" id="resultArea">
-        <div class="analyze-progress-bar" id="analyzeProgressBar"></div>
         <div class="result-header">
           <span class="result-title">分析结果</span>
           <span class="result-time" id="resultTime"></span>
@@ -636,7 +906,31 @@ body {
           <div id="operationDiagnosis"></div>
         </div>
         <div class="result-progress" id="resultProgress">
-          <div class="rp-title">智能分析中</div>
+          <div class="rp-head">
+            <div>
+              <div class="rp-status"><span class="rp-status-dot"></span>Analyzing</div>
+              <div class="rp-title">智能分析进行中</div>
+              <div class="rp-subtitle" id="progressHeadline">
+                <span class="rp-subtitle-text" id="progressHeadlineText">正在整理业务数据并生成诊断结论</span>
+                <span class="rp-subtitle-dots" id="progressHeadlineDots">...</span>
+              </div>
+            </div>
+            <div class="rp-orbit" aria-hidden="true"></div>
+          </div>
+          <div class="rp-meta">
+            <div class="rp-meta-card">
+              <div class="rp-meta-label">Data</div>
+              <div class="rp-meta-value" id="progressDataDate">今日样本</div>
+            </div>
+            <div class="rp-meta-card">
+              <div class="rp-meta-label">Engine</div>
+              <div class="rp-meta-value">规则引擎 + AI</div>
+            </div>
+            <div class="rp-meta-card">
+              <div class="rp-meta-label">Output</div>
+              <div class="rp-meta-value">诊断结论 / 运营建议</div>
+            </div>
+          </div>
           <div class="step-list" id="stepList">
             <div class="step-item" data-step="loading">
               <div class="step-dot">1</div>
@@ -644,6 +938,7 @@ body {
                 <div class="step-label">加载业务数据</div>
                 <div class="step-desc"></div>
               </div>
+              <div class="step-state">WAIT</div>
               <div class="step-line"></div>
             </div>
             <div class="step-item" data-step="ai_analysis">
@@ -652,6 +947,7 @@ body {
                 <div class="step-label">AI 分析诊断</div>
                 <div class="step-desc"></div>
               </div>
+              <div class="step-state">WAIT</div>
               <div class="step-line"></div>
             </div>
             <div class="step-item" data-step="parsing">
@@ -660,6 +956,7 @@ body {
                 <div class="step-label">解析分析结果</div>
                 <div class="step-desc"></div>
               </div>
+              <div class="step-state">WAIT</div>
               <div class="step-line"></div>
             </div>
             <div class="step-item" data-step="complete">
@@ -668,6 +965,7 @@ body {
                 <div class="step-label">分析完成</div>
                 <div class="step-desc"></div>
               </div>
+              <div class="step-state">WAIT</div>
               <div class="step-line"></div>
             </div>
           </div>
@@ -689,6 +987,22 @@ const API_BASE = '/api';
 
 // 当前页面展示的业务数据（用于分析时提交）
 let currentData = {};
+let progressDotsTimer = null;
+
+function buildAnimatedChars(text, className) {
+  return Array.from(text || '').map((char, index) => {
+    const safeChar = char === ' ' ? '&nbsp;' : escHtml(char);
+    return `<span class="${className}" style="--char-index:${index}">${safeChar}</span>`;
+  }).join('');
+}
+
+function setAnimatedHeadlineText(text) {
+  const el = document.getElementById('progressHeadlineText');
+  if (!el) return;
+  el.classList.add('wave');
+  el.dataset.text = text || '';
+  el.innerHTML = buildAnimatedChars(text || '', 'headline-char');
+}
 
 // 三种演示场景数据（业务数据 + 规则阈值）
 const demos = {
@@ -743,6 +1057,12 @@ function showLoading(show) {
   if (show) {
     document.getElementById('resultContent').classList.remove('show');
     resetProgress();
+    const date = currentData.reportDate || new Date().toISOString().slice(0,10);
+    const el = document.getElementById('progressDataDate');
+    if (el) el.textContent = date;
+    startProgressHeadlineAnimation();
+  } else {
+    stopProgressHeadlineAnimation();
   }
 }
 
@@ -875,7 +1195,6 @@ async function analyze() {
   btn.disabled = true;
   btn.textContent = '分析中...';
   document.querySelector('.content').classList.add('blur-active');
-  document.getElementById('analyzeProgressBar').classList.add('active');
 
   const mainEl = document.querySelector('.main');
   if (mainEl) mainEl.scrollTop = 0;
@@ -941,7 +1260,6 @@ async function analyze() {
     btn.disabled = false;
     btn.textContent = '开始分析';
     document.querySelector('.content')?.classList.remove('blur-active');
-    document.getElementById('analyzeProgressBar')?.classList.remove('active');
   }
 }
 
@@ -950,6 +1268,13 @@ function updateProgress(step, message) {
   const idx = order.indexOf(step);
   if (idx < 0) return;
   const items = document.querySelectorAll('.step-item');
+  const headlineMap = {
+    loading: '正在整理业务数据',
+    ai_analysis: 'AI 正在分析诊断数据',
+    parsing: '正在解析与排版结果',
+    complete: '分析已完成，准备展示'
+  };
+  setAnimatedHeadlineText(message || headlineMap[step] || '');
   items.forEach((el, i) => {
     el.classList.remove('done', 'active', 'pending');
     if (i < idx) el.classList.add('done');
@@ -957,6 +1282,7 @@ function updateProgress(step, message) {
     else el.classList.add('pending');
     // Update description for active/done step
     const desc = el.querySelector('.step-desc');
+    const state = el.querySelector('.step-state');
     if (desc) {
       if (i === idx && message) {
         desc.textContent = message;
@@ -966,6 +1292,9 @@ function updateProgress(step, message) {
         desc.textContent = '';
       }
     }
+    if (state) {
+      state.textContent = i < idx ? 'DONE' : i === idx ? 'NOW' : 'WAIT';
+    }
   });
 }
 
@@ -973,19 +1302,50 @@ function resetProgress() {
   document.querySelectorAll('.step-item').forEach(el => {
     el.classList.remove('done', 'active');
     el.classList.add('pending');
+    const state = el.querySelector('.step-state');
+    if (state) state.textContent = 'WAIT';
+    const desc = el.querySelector('.step-desc');
+    if (desc) desc.textContent = '';
   });
   // First step active
   const first = document.querySelector('.step-item');
   if (first) { first.classList.remove('pending'); first.classList.add('active'); }
+  setAnimatedHeadlineText('正在整理业务数据并生成诊断结论');
+}
+
+function startProgressHeadlineAnimation() {
+  const dots = document.getElementById('progressHeadlineDots');
+  if (!dots) return;
+  stopProgressHeadlineAnimation();
+  const frames = ['.', '..', '...'];
+  let i = 0;
+  dots.textContent = frames[0];
+  progressDotsTimer = setInterval(() => {
+    i = (i + 1) % frames.length;
+    dots.textContent = frames[i];
+  }, 420);
+}
+
+function stopProgressHeadlineAnimation() {
+  if (progressDotsTimer) {
+    clearInterval(progressDotsTimer);
+    progressDotsTimer = null;
+  }
+  const dots = document.getElementById('progressHeadlineDots');
+  if (dots) dots.textContent = '...';
 }
 
 function renderResult(data) {
   const now = new Date().toLocaleString('zh-CN');
+  const resultContent = document.getElementById('resultContent');
   document.getElementById('resultTime').textContent = now;
   document.getElementById('diagnosisConclusion').innerHTML = formatDiagnosisConclusion(data['诊断结论']);
   document.getElementById('operationDiagnosis').innerHTML = formatOperationDiagnosis(data['运营诊断']);
+  stopProgressHeadlineAnimation();
   document.getElementById('resultProgress').classList.remove('show');
-  document.getElementById('resultContent').classList.add('show');
+  resultContent.classList.remove('show');
+  void resultContent.offsetWidth;
+  resultContent.classList.add('show');
 }
 
 function formatDiagnosisConclusion(dc) {
@@ -1000,9 +1360,14 @@ function formatDiagnosisConclusion(dc) {
   return groups.map(g => {
     const items = dc[g.key];
     const hasItems = Array.isArray(items) && items.length;
-    return `<div class="dc-section ${g.cls}">
+    const criticalClass = g.key === '立即关注' && hasItems ? ' critical-hit' : '';
+    const alertTag = g.key === '立即关注' && hasItems
+      ? '<span class="dc-alert-tag">立即处理</span>'
+      : '';
+    return `<div class="dc-section ${g.cls}${criticalClass}">
       <div class="dc-header">
         <span class="dc-dot"></span>${g.label}
+        ${alertTag}
         <span class="dc-badge">${hasItems ? items.length + ' 条' : ''}</span>
       </div>
       ${hasItems
@@ -1135,6 +1500,7 @@ function showToast(msg, isError) {
 }
 
 // 页面加载时自动从数据库加载配置，无数据时默认加载绿色场景
+setAnimatedHeadlineText('正在整理业务数据并生成诊断结论');
 loadConfig().then(() => {
   if (currentData.todayRevenue == null) {
     loadDemo('green');

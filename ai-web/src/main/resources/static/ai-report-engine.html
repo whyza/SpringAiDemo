@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 智能报告中心</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F4F0;
+    --surface: #FFFFFF;
+    --surface2: #F0EFE9;
+    --border: #E2E0D8;
+    --border2: #D0CEC4;
+    --text: #1A1916;
+    --text2: #6B6860;
+    --text3: #A09E98;
+    --blue: #1A4FBF;
+    --blue-light: #EBF0FC;
+    --blue-mid: #B8C8F4;
+    --red: #BF2D1A;
+    --red-light: #FCECEA;
+    --red-mid: #F4B8B0;
+    --amber: #9E6010;
+    --amber-light: #FCF5E8;
+    --amber-mid: #F4D8A0;
+    --green: #1A6E3A;
+    --green-light: #E8F6EE;
+    --green-mid: #A8DFC0;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ─── Layout ─── */
+  .shell {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ─── Sidebar ─── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .logo-mark {
+    width: 32px; height: 32px;
+    background: var(--text);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 10px;
+  }
+  .logo-mark svg { width: 16px; height: 16px; }
+  .logo-name { font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  .logo-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+  .nav-section { padding: 0 12px; margin-bottom: 4px; }
+  .nav-label { font-size: 10px; font-weight: 500; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; padding: 8px 8px 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 8px; border-radius: var(--radius-sm);
+    font-size: 13px; color: var(--text2);
+    cursor: pointer; transition: all 0.12s;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--text); color: white; }
+  .nav-item .nav-icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  .sidebar-bottom {
+    margin-top: auto;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text3);
+  }
+
+  /* ─── Main ─── */
+  .main {
+    overflow-y: auto;
+    background: var(--bg);
+  }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--text2);
+  }
+  .breadcrumb .sep { color: var(--border2); }
+  .breadcrumb .cur { color: var(--text); font-weight: 500; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .topbar-badge {
+    font-size: 12px; padding: 4px 10px;
+    background: var(--green-light); color: var(--green);
+    border-radius: 20px; font-weight: 500;
+  }
+
+  .content { padding: 28px 32px; max-width: 900px; }
+
+  /* ─── Page Header ─── */
+  .page-header { margin-bottom: 24px; }
+  .page-title { font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+  .page-desc { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+  /* ─── Cards Grid ─── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .report-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    cursor: default;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    display: flex; flex-direction: column;
+  }
+  .report-card:hover { border-color: var(--border2); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+  .rc-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .rc-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .rc-icon.blue { background: var(--blue-light); }
+  .rc-icon.red { background: var(--red-light); }
+  .rc-icon.amber { background: var(--amber-light); }
+  .rc-icon.green { background: var(--green-light); }
+
+  /* Toggle */
+  .toggle-wrap { display: flex; align-items: center; gap: 6px; }
+  .toggle {
+    width: 38px; height: 22px; border-radius: 11px;
+    border: none; cursor: pointer; position: relative;
+    transition: background 0.2s; flex-shrink: 0;
+  }
+  .toggle.on { background: #1A6E3A; }
+  .toggle.off { background: var(--border2); }
+  .toggle::after {
+    content: ''; position: absolute; top: 3px;
+    width: 16px; height: 16px; border-radius: 50%; background: white;
+    transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle.on::after { left: 19px; }
+  .toggle.off::after { left: 3px; }
+
+  .rc-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+  .rc-desc { font-size: 12px; color: var(--text2); line-height: 1.55; margin-bottom: 14px; flex: 1; }
+  .rc-footer { display: flex; justify-content: space-between; align-items: center; }
+  .rc-meta {
+    font-size: 11px; color: var(--text3);
+    background: var(--surface2); padding: 3px 8px; border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+  .rc-meta.active-meta { background: var(--green-light); color: var(--green); }
+
+  .btn-config {
+    font-size: 12px; font-weight: 500;
+    color: var(--blue); border: 1px solid var(--blue-mid);
+    background: var(--blue-light); padding: 5px 12px;
+    border-radius: var(--radius-sm); cursor: pointer;
+    transition: all 0.12s;
+  }
+  .btn-config:hover { background: var(--blue-mid); }
+
+  /* ─── Detail Page ─── */
+  .detail-page { display: none; }
+  .detail-page.active { display: block; }
+  .list-page.hidden { display: none; }
+
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--text2);
+    background: transparent; border: none; cursor: pointer;
+    padding: 0; margin-bottom: 20px;
+    transition: color 0.12s;
+  }
+  .back-btn:hover { color: var(--text); }
+
+  .detail-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-title { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+  .detail-sub { font-size: 13px; color: var(--text2); margin-top: 3px; }
+  .status-pill {
+    font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 500;
+  }
+  .status-on { background: var(--green-light); color: var(--green); }
+
+  /* ─── Section Label ─── */
+  .sec-label {
+    font-size: 10px; font-weight: 600; color: var(--text3);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin: 24px 0 10px;
+  }
+
+  /* ─── Rule Groups ─── */
+  .rule-group { margin-bottom: 14px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+
+  .rg-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 16px;
+    font-size: 13px; font-weight: 600;
+  }
+  .rg-header.red { background: var(--red-light); color: var(--red); border-bottom: 1px solid var(--red-mid); }
+  .rg-header.amber { background: var(--amber-light); color: var(--amber); border-bottom: 1px solid var(--amber-mid); }
+  .rg-header.green { background: var(--green-light); color: var(--green); border-bottom: 1px solid var(--green-mid); }
+
+  .rg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .rg-dot.red { background: var(--red); }
+  .rg-dot.amber { background: var(--amber); }
+  .rg-dot.green { background: var(--green); }
+  .rg-badge {
+    margin-left: auto; font-size: 11px; font-weight: 500;
+    opacity: 0.7; font-family: 'DM Mono', monospace;
+  }
+
+  .rule-row {
+    display: grid;
+    grid-template-columns: 170px 1fr auto;
+    gap: 16px; align-items: center;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .rule-row:last-child { border-bottom: none; }
+  .rule-row:nth-child(even) { background: var(--surface2); }
+
+  .rr-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .rr-id { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; margin-bottom: 2px; }
+  .rr-cond { font-size: 12px; color: var(--text2); line-height: 1.45; }
+  .rr-note { font-size: 11px; color: var(--text3); margin-top: 2px; font-style: italic; }
+
+  .rr-ctrl { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .ctrl-row { display: flex; align-items: center; gap: 5px; }
+  .ctrl-label { font-size: 11px; color: var(--text3); }
+  .ctrl-input {
+    width: 56px; height: 30px; font-size: 13px; font-family: 'DM Mono', monospace;
+    text-align: center; font-weight: 500;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    transition: border-color 0.12s;
+    padding: 0 6px;
+  }
+  .ctrl-input:focus { outline: none; border-color: var(--blue-mid); }
+  .ctrl-unit { font-size: 12px; color: var(--text2); min-width: 16px; }
+  .ctrl-default { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .ctrl-auto { font-size: 12px; color: var(--text3); font-style: italic; }
+
+  /* ─── Push Section ─── */
+  .push-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+  .push-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+  .push-row:last-child { margin-bottom: 0; }
+  .push-label { font-size: 13px; color: var(--text2); min-width: 72px; font-weight: 500; }
+
+  .opts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .opt {
+    font-size: 12px; font-weight: 500;
+    padding: 5px 14px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border2);
+    cursor: pointer; background: var(--surface);
+    color: var(--text2); transition: all 0.12s;
+    font-family: 'DM Mono', monospace;
+  }
+  .opt:hover { border-color: var(--text3); color: var(--text); }
+  .opt.sel-time { background: var(--text); color: white; border-color: var(--text); }
+  .opt.sel-ch { background: var(--green-light); color: var(--green); border-color: var(--green-mid); }
+
+  .push-hint {
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text3); line-height: 1.5;
+  }
+
+  /* ─── Save Bar ─── */
+  .save-bar {
+    display: flex; justify-content: flex-end; gap: 8px;
+    margin-top: 24px; padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-cancel {
+    font-size: 13px; font-weight: 500;
+    padding: 8px 18px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border2);
+    background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.12s;
+  }
+  .btn-cancel:hover { border-color: var(--text3); color: var(--text); }
+  .btn-save {
+    font-size: 13px; font-weight: 600;
+    padding: 8px 22px; border-radius: var(--radius-sm);
+    border: none; background: var(--text); color: white;
+    cursor: pointer; transition: opacity 0.12s;
+  }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-reset {
+    font-size: 13px; font-weight: 500;
+    padding: 8px 14px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border2);
+    background: transparent; color: var(--text3);
+    cursor: pointer; margin-right: auto;
+    transition: all 0.12s;
+  }
+  .btn-reset:hover { color: var(--red); border-color: var(--red-mid); }
+
+  /* ─── Toast ─── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--text); color: white;
+    font-size: 13px; font-weight: 500;
+    padding: 10px 18px; border-radius: var(--radius);
+    opacity: 0; transform: translateY(8px);
+    transition: all 0.2s; pointer-events: none; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ─── Footer count ─── */
+  .grid-footer { font-size: 12px; color: var(--text3); text-align: center; padding: 8px 0 2px; }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 640px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .content { padding: 20px 16px; }
+    .rule-row { grid-template-columns: 1fr; gap: 8px; }
+    .rr-ctrl { align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 16 16" fill="none">
+          <rect x="1" y="1" width="6" height="6" rx="1.5" fill="white" opacity="0.9"/>
+          <rect x="9" y="1" width="6" height="6" rx="1.5" fill="white" opacity="0.6"/>
+          <rect x="1" y="9" width="6" height="6" rx="1.5" fill="white" opacity="0.6"/>
+          <rect x="9" y="9" width="6" height="6" rx="1.5" fill="white" opacity="0.3"/>
+        </svg>
+      </div>
+      <div class="logo-name">ERP 管理平台</div>
+      <div class="logo-sub">跨境电商运营系统</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">运营</div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+        数据看板
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,11 5,7 8,9 11,5 14,3"/><line x1="14" y1="3" x2="14" y2="7"/><line x1="14" y1="3" x2="10" y2="3"/></svg>
+        销售分析
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1.5"/><line x1="5" y1="3" x2="5" y2="13"/><line x1="2" y1="7" x2="14" y2="7"/></svg>
+        库存管理
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">AI 工具</div>
+      <div class="nav-item active">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+        智能报告中心
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h10M8 3l5 5-5 5"/></svg>
+        诊断日志
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">设置</div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg>
+        账号设置
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">数据每日 06:00 自动采集</div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="breadcrumb">
+        <span>AI 工具</span>
+        <span class="sep">›</span>
+        <span class="cur" id="breadCur">智能报告中心</span>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-badge" id="topBadge">1 张报告已开启</span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ═══ LIST PAGE ═══ -->
+      <div id="listPage" class="list-page">
+        <div class="page-header">
+          <div class="page-title">智能报告中心</div>
+          <div class="page-desc">订阅所需的报告卡片，系统按设定时间自动采集数据、触发诊断规则、推送 AI 运营日报</div>
+        </div>
+
+        <div class="cards-grid">
+          <!-- Card 1: active -->
+          <div class="report-card">
+            <div class="rc-top">
+              <div class="rc-icon blue">📊</div>
+              <div class="toggle-wrap">
+                <button class="toggle on" onclick="toggleCard(this, 0)"></button>
+              </div>
+            </div>
+            <div class="rc-name">销售健康度日报</div>
+            <div class="rc-desc">每日自动汇总亚马逊平台所有店铺的销售额、订单量、销量上涨链接数、销量下跌链接数、未出单链接数，进行综合运营分析，识别异常与亮点并生成诊断报告推送给用户。</div>
+            <div class="rc-footer">
+              <span class="rc-meta active-meta" id="meta0">已开启 · 09:00 推送</span>
+              <button class="btn-config" onclick="showDetail()">配置规则</button>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="report-card">
+            <div class="rc-top">
+              <div class="rc-icon red">📦</div>
+              <div class="toggle-wrap">
+                <button class="toggle off" onclick="toggleCard(this, 1)"></button>
+              </div>
+            </div>
+            <div class="rc-name">库存健康预警</div>
+            <div class="rc-desc">监控 FBA 库存水位、滞销 SKU、补货建议及库龄异常，帮助卖家提前规避断货与长仓费风险。</div>
+            <div class="rc-footer">
+              <span class="rc-meta" id="meta1">5 项指标 · 7 条规则</span>
+              <button class="btn-config" style="opacity:0.45;cursor:not-allowed">配置规则</button>
+            </div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="report-card">
+            <div class="rc-top">
+              <div class="rc-icon amber">📣</div>
+              <div class="toggle-wrap">
+                <button class="toggle off" onclick="toggleCard(this, 2)"></button>
+              </div>
+            </div>
+            <div class="rc-name">广告效率周报</div>
+            <div class="rc-desc">分析 ACOS、ROAS、点击转化等广告核心指标，识别高消耗低转化词和预算分配异常，每周五推送。</div>
+            <div class="rc-footer">
+              <span class="rc-meta" id="meta2">8 项指标 · 6 条规则</span>
+              <button class="btn-config" style="opacity:0.45;cursor:not-allowed">配置规则</button>
+            </div>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="report-card">
+            <div class="rc-top">
+              <div class="rc-icon green">💰</div>
+              <div class="toggle-wrap">
+                <button class="toggle off" onclick="toggleCard(this, 3)"></button>
+              </div>
+            </div>
+            <div class="rc-name">利润结构分析</div>
+            <div class="rc-desc">拆解各 SKU 毛利率、退货率、广告占比、FBA 费用趋势，定位利润流失原因，每周一推送。</div>
+            <div class="rc-footer">
+              <span class="rc-meta" id="meta3">7 项指标 · 8 条规则</span>
+              <button class="btn-config" style="opacity:0.45;cursor:not-allowed">配置规则</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-footer" id="gridFooter">当前已开启 1 / 4 张报告卡片 · 更多场景即将上线</div>
+      </div>
+
+      <!-- ═══ DETAIL PAGE ═══ -->
+      <div id="detailPage" class="detail-page">
+        <button class="back-btn" onclick="showList()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="9,2 4,7 9,12"/></svg>
+          返回报告中心
+        </button>
+
+        <div class="detail-header">
+          <div>
+            <div class="detail-title">销售健康度日报</div>
+            <div class="detail-sub">亚马逊全店铺 · 当天数据 · 5 项指标 · 8 条诊断规则 · 每日自动推送</div>
+          </div>
+          <span class="status-pill status-on">已开启</span>
+        </div>
+
+        <div class="sec-label">诊断规则配置</div>
+
+        <!-- Red -->
+        <div class="rule-group">
+          <div class="rg-header red">
+            <div class="rg-dot red"></div>
+            红色预警 — 需立即关注
+            <span class="rg-badge">3 条规则</span>
+          </div>
+
+          <div class="rule-row">
+            <div>
+              <div class="rr-id">R1</div>
+              <div class="rr-name">销售额大幅下滑</div>
+              <div class="rr-note">最高优先级</div>
+            </div>
+            <div class="rr-cond">当天销售额相较昨日下降幅度达到阈值 → 推送「销售额大幅下滑预警」</div>
+            <div class="rr-ctrl">
+              <div class="ctrl-row">
+                <span class="ctrl-label">下降幅度 ≥</span>
+                <input class="ctrl-input" type="number" value="20" min="1" max="99" id="r1">
+                <span class="ctrl-unit">%</span>
+              </div>
+              <span class="ctrl-default">默认 20%</span>
+            </div>
+          </div>
+
+          <div class="rule-row">
+            <div>
+              <div class="rr-id">R2</div>
+              <div class="rr-name">大量链接下跌</div>
+              <div class="rr-note">最高优先级</div>
+            </div>
+            <div class="rr-cond">当天下跌链接数占当天总链接数的比例达到阈值 → 推送「大量链接下跌预警」</div>
+            <div class="rr-ctrl">
+              <div class="ctrl-row">
+                <span class="ctrl-label">下跌占比 ≥</span>
+                <input class="ctrl-input" type="number" value="30" min="1" max="99" id="r2">
+                <span class="ctrl-unit">%</span>
+              </div>
+              <span class="ctrl-default">默认 30%</span>
+            </div>
+          </div>
+
+          <div class="rule-row">
+            <div>
+              <div class="rr-id">R3</div>
+              <div class="rr-name">大量链接未出单</div>
+              <div class="rr-note">最高优先级</div>
+            </div>
+            <div class="rr-cond">当天未出单链接数占总链接数的比例达到阈值 → 推送「大量链接未出单预警」</div>
+            <div class="rr-ctrl">
+              <div class="ctrl-row">
+                <span class="ctrl-label">未出单占比 ≥</span>
+                <input class="ctrl-input" type="number" value="30" min="1" max="99" id="r3">
+                <span class="ctrl-unit">%</span>
+              </div>
+              <span class="ctrl-default">默认 30%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Amber -->
+        <div class="rule-group">
+          <div class="rg-header amber">
+            <div class="rg-dot amber"></div>
+            黄色关注 — 值得注意
+            <span class="rg-badge">3 条规则</span>
+          </div>
+
+          <div class="rule-row">
+            <div>
+              <div class="rr-id">Y1</div>
+              <div class="rr-name">销售额小幅下滑</div>
+              <div class="rr-note">与 R1 互斥，命中较高级别</div>
+            </div>
+            <div class="rr-cond">当天销售额下降幅度达到黄色阈值，但未达到红色阈值 → 推送「销售额小幅下滑关注」</div>
+            <div class="rr-ctrl">
+              <div class="ctrl-row">
+                <span class="ctrl-label">下降幅度 ≥</span>
+                <input class="ctrl-input" type="number" value="10" min="1" max="99" id="y1">
+                <span class="ctrl-unit">%</span>
+              </div>
+              <span class="ctrl-default">默认 10%</span>
+            </div>
+          </div>
+
+          <div class="rule-row">
+            <div>
+              <div class="rr-id">Y2</div>
+              <div class="rr-name">部分链接下跌</div>
+              <div class="rr-note">与 R2 互斥，命中较高级别</div>
+            </div>
+            <div class="rr-cond">当天下跌链接数占当天总链接数的比例未达到红色阈值 → 推送「部分链接下跌提示」</div>
+            <div class="rr-ctrl">
+              <span class="ctrl-auto">自动联动 R2 阈值</span>
+              <span class="ctrl-default">无需单独设置</span>
+            </div>
+          </div>
+
+          <div class="rule-row">
+            <div>
+              <div class="rr-id">Y3</div>
+              <div class="rr-name">部分链接未出单</div>
+              <div class="rr-note">与 R3 互斥，命中较高级别</div>
+            </div>
+            <div class="rr-cond">当天未出单链接数占总链接数的比例未达到红色阈值 → 推送「部分链接未出单提示」</div>
+            <div class="rr-ctrl">
+              <span class="ctrl-auto">自动联动 R3 阈值</span>
+              <span class="ctrl-default">无需单独设置</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Green -->
+        <div class="rule-group">
+          <div class="rg-header green">
+            <div class="rg-dot green"></div>
+            绿色亮点 — 正向反馈
+            <span class="rg-badge">2 条规则</span>
+          </div>
+
+          <div class="rule-row">
+            <div>
+              <div class="rr-id">G1</div>
+              <div class="rr-name">销售额稳步增长</div>
+              <div class="rr-note">正向触发</div>
+            </div>
+            <div class="rr-cond">当天销售额相较昨日增长幅度达到阈值 → 推送「销售额稳步增长」</div>
+            <div class="rr-ctrl">
+              <div class="ctrl-row">
+                <span class="ctrl-label">增长幅度 ≥</span>
+                <input class="ctrl-input" type="number" value="10" min="1" max="99" id="g1">
+                <span class="ctrl-unit">%</span>
+              </div>
+              <span class="ctrl-default">默认 10%</span>
+            </div>
+          </div>
+
+          <div class="rule-row">
+            <div>
+              <div class="rr-id">G2</div>
+              <div class="rr-name">上涨链接占比亮眼</div>
+              <div class="rr-note">正向触发</div>
+            </div>
+            <div class="rr-cond">当天上涨链接数占当天总链接数比例达到阈值 → 推送「上涨链接占比亮眼」</div>
+            <div class="rr-ctrl">
+              <div class="ctrl-row">
+                <span class="ctrl-label">上涨占比 ≥</span>
+                <input class="ctrl-input" type="number" value="40" min="1" max="99" id="g2">
+                <span class="ctrl-unit">%</span>
+              </div>
+              <span class="ctrl-default">默认 40%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Push Settings -->
+        <div class="sec-label">推送设置</div>
+        <div class="push-box">
+          <div class="push-row">
+            <span class="push-label">推送时间</span>
+            <div class="opts" id="timeOpts">
+              <div class="opt" onclick="selTime(this)">08:00</div>
+              <div class="opt sel-time" onclick="selTime(this)">09:00</div>
+              <div class="opt" onclick="selTime(this)">10:00</div>
+            </div>
+          </div>
+          <div class="push-row">
+            <span class="push-label">推送渠道</span>
+            <div class="opts" id="chOpts">
+              <div class="opt sel-ch" onclick="toggleCh(this)">钉钉</div>
+              <div class="opt" onclick="toggleCh(this)">飞书</div>
+              <div class="opt" onclick="toggleCh(this)">系统通知</div>
+            </div>
+          </div>
+          <div class="push-hint">
+            数据采集时间 06:00 由系统统一调度，不支持自定义。<br>
+            报告将在采集完成后（约 06:15）生成，并在选定时间准时推送。
+          </div>
+        </div>
+
+        <div class="save-bar">
+          <button class="btn-reset" onclick="resetDefaults()">恢复默认值</button>
+          <button class="btn-cancel" onclick="showList()">取消</button>
+          <button class="btn-save" onclick="handleSave()">保存配置</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let onCount = 1;
+
+  function showDetail() {
+    document.getElementById('listPage').classList.add('hidden');
+    document.getElementById('detailPage').classList.add('active');
+    document.getElementById('breadCur').textContent = '销售健康度日报 · 规则配置';
+  }
+
+  function showList() {
+    document.getElementById('listPage').classList.remove('hidden');
+    document.getElementById('detailPage').classList.remove('active');
+    document.getElementById('breadCur').textContent = '智能报告中心';
+  }
+
+  function toggleCard(btn, idx) {
+    const isOn = btn.classList.contains('on');
+    btn.classList.toggle('on');
+    btn.classList.toggle('off');
+    onCount += isOn ? -1 : 1;
+    const meta = document.getElementById('meta' + idx);
+    if (idx === 0) {
+      if (!isOn) {
+        meta.className = 'rc-meta active-meta';
+        meta.textContent = '已开启 · 09:00 推送';
+      } else {
+        meta.className = 'rc-meta';
+        meta.textContent = '5 项指标 · 8 条规则';
+      }
+    }
+    document.getElementById('topBadge').textContent = onCount + ' 张报告已开启';
+    document.getElementById('gridFooter').textContent = '当前已开启 ' + onCount + ' / 4 张报告卡片 · 更多场景即将上线';
+  }
+
+  function selTime(el) {
+    document.querySelectorAll('#timeOpts .opt').forEach(e => e.classList.remove('sel-time'));
+    el.classList.add('sel-time');
+  }
+
+  function toggleCh(el) {
+    el.classList.toggle('sel-ch');
+  }
+
+  function resetDefaults() {
+    const defaults = { r1: 20, r2: 30 };
+    document.querySelectorAll('.ctrl-input').forEach(inp => {
+      if (inp.id && defaults[inp.id]) inp.value = defaults[inp.id];
+    });
+    showToast('已恢复所有默认阈值');
+  }
+
+  function handleSave() {
+    showList();
+    showToast('配置已保存，将于明日 09:00 生效');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+</script>
+</body>
+</html>
